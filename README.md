@@ -14,20 +14,35 @@ Multi-class classification is also possible, but will require setting up an appr
 ## Requirements
 `
 Python 3.7
+
 Pytorch 1.1.0
+
 torchvision 0.2.2
+
 argparse
+
 matplotlib
+
 PIL
+
 tensorboardX
+
 nibabel
+
 scipy
+
 numpy
+
 sklearn
+
 skimage
+
 h5py
+
 SimpleITK
+
 pandas
+
 random
 `
 For 3D datasets - TITAN GPU with 24GB memory is required for training.
@@ -35,6 +50,10 @@ For 3D datasets - TITAN GPU with 24GB memory is required for training.
 ## Datasets
 
 Since we cannot release the datasets used in the paper, we instead provide an example using a simulated datasets of noise and squares.
+
+Below is an example of a simulated dataset (on the left) of 2 classes - 1 noisy image with squares, and one without squares. The goal is to find the squares, and achieve translation between the classes.
+![simulated dataset of squares](syn_sqaures_example.png)
+
 Please check related websites for getting the data:
 
 http://adni.loni.usc.edu/
@@ -42,9 +61,6 @@ http://adni.loni.usc.edu/
 https://www.ukbiobank.ac.uk/
 
 https://www.humanconnectome.org/
-
-Below is an example of a simulated dataset (on the left) of 2 classes - 1 noisy image with squares, and one without squares. The goal is to find the squares, and achieve translation between the classes.
-![simulated dataset of squares](syn_sqaures_example.png)
 
 
 ## Instructions
