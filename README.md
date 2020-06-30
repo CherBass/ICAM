@@ -11,17 +11,57 @@ We developed a method for feature attribution which supports 2D and 3D datasets 
 New datasets are easy to set up, requiring the desired dataset, and minimal addition of dataloader code.
 Multi-class classification is also possible, but will require setting up an appropriate dataloader, and updating the training code.
 
+## Requirements
+`
+Python 3.7
+Pytorch 1.1.0
+torchvision 0.2.2
+argparse
+matplotlib
+PIL
+tensorboardX
+nibabel
+scipy
+numpy
+sklearn
+skimage
+h5py
+SimpleITK
+pandas
+random
+`
+For 3D datasets - TITAN GPU with 24GB memory is required for training.
+
+## Datasets
+
 Since we cannot release the datasets used in the paper, we instead provide an example using a simulated datasets of noise and squares.
+Please check related websites for getting the data:
+http://adni.loni.usc.edu/
+https://www.ukbiobank.ac.uk/
+https://www.humanconnectome.org/
 
 Below is an example of a simulated dataset (on the left) of 2 classes - 1 noisy image with squares, and one without squares. The goal is to find the squares, and achieve translation between the classes.
 ![simulated dataset of squares](syn_sqaures_example.png)
 
+
+## Instructions
+To run the 2D simulated dataset example, install python 3.7 with relevant libraries (listed above- recommended using a virtual environment), and run:
+`python train.py`
+It will run ICAM with default parameters on the simulated squares dataset, and save results to /results.
+
+-You can change parameters in `options.py`.
+-To run with regression, change regression to True in `options.py`. Note that an appropriate dataset would need to be used (not possible with 2D simulated dataset example).
+-Note that to change datasets, a new dataloader would be needed with the following outputs: [tensor image, tensor label (regression), tensor mask]
+-Add this dataloader to `train.py` as another option. 
+-It is recommended to resize your datasets to [128, 128] for 2D datasets or [128, 160, 128] for 3D datasets. 
+-Alternatively, some changes might be needed in the networks to run on datasets of different dimensions. See `networks.py` and `networks_3d.py`.
 
 ## Reference
 
 https://arxiv.org/abs/2006.08287
 
 If this repository was useful to your work, please consider citing us:
+
 `@article{bass2020icam,
   title={ICAM: Interpretable Classification via Disentangled Representations and Feature Attribution Mapping},
   author={Bass, Cher and da Silva, Mariana and Sudre, Carole and Tudosiu, Petru-Daniel and Smith, Stephen and Robinson, Emma},
