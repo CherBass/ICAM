@@ -20,10 +20,11 @@ For 3D datasets - TITAN GPU with 24GB memory is required for training.
 
 Since we cannot release the datasets used in the paper, we instead provide an example using a simulated datasets of noise and squares.
 
-Below is an example of a simulated dataset (on the left) of 2 classes - 1 noisy image with squares, and one without squares. The goal is to find the squares, and achieve translation between the classes.
+Below is an example of a simulated dataset (on the left) of 2 classes - 1 noisy image with squares, and one without squares. The goal is to find the squares, and achieve translation between the classes. Here we show an example output after 20 epochs of training with original inputs, masks (i.e. location of squares), translation (between class 0 and 1), translation with random attribute, and feature attribution maps.
+
 ![simulated dataset of squares](syn_sqaures_example.png)
 
-Please check related websites for getting the data:
+Please check related websites for getting the datasets used in the paper:
 
 http://adni.loni.usc.edu/
 
@@ -42,8 +43,7 @@ It will run ICAM with default parameters on the simulated squares dataset, and s
 - To run with regression, change regression to True in `options.py`. Note that an appropriate dataset would need to be used (not possible with 2D simulated dataset example).
 
 - Note that to change datasets, a new dataloader would be needed with the following outputs: [tensor image, tensor label (regression), tensor mask].
-
-- Add this dataloader to `train.py` as another option. 
+Add this dataloader to `train.py` as another option. 
 
 - It is recommended to resize your datasets to [128, 128] for 2D datasets or [128, 160, 128] for 3D datasets. 
 
