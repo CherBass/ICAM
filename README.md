@@ -12,7 +12,9 @@ New datasets are easy to set up, requiring the desired dataset, and minimal addi
 Multi-class classification is also possible, but will require setting up an appropriate dataloader, and updating the training code.
 
 ## Requirements
-`Python 3.7, Pytorch 1.1.0, torchvision 0.2.2, argparse, matplotlib, PIL, tensorboardX, nibabel, scipy, numpy, sklearn, skimage, h5py, SimpleITK, pandas, random`
+Install Ptyhon 3.7 with the following libraries:
+
+`Pytorch 1.1.0, torchvision 0.2.2, argparse, matplotlib, PIL, tensorboardX, nibabel, scipy, numpy, sklearn, skimage, h5py, SimpleITK, pandas, random`
 
 For 3D datasets - TITAN GPU with 24GB memory is required for training.
 
