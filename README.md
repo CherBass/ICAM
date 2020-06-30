@@ -14,7 +14,7 @@ Multi-class classification is also possible, but will require setting up an appr
 Since we cannot release the datasets used in the paper, we instead provide an example using a simulated datasets of noise and squares.
 
 Below is an example of a simulated dataset (on the left) of 2 classes - 1 noisy image with squares, and one without squares. The goal is to find the squares, and achieve translation between the classes.
-![simulated dataset of squares](syn2d_sqaures_example.png)
+![simulated dataset of squares](syn_sqaures_example.png)
 
 
 ## Reference
