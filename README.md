@@ -14,7 +14,7 @@ Multi-class classification is also possible, but will require setting up an appr
 ## Requirements
 Install Python 3.7 with the following libraries:
 
-`Pytorch 1.1.0, torchvision 0.2.2, argparse, matplotlib, PIL, tensorboardX, nibabel, scipy, numpy, sklearn, skimage, h5py, SimpleITK, pandas, random`
+`Pytorch 1.1.0, torchvision 0.2.2, argparse, matplotlib, PIL, tensorboardX, nibabel, scipy, numpy, sklearn, skimage, h5py, SimpleITK, pandas`
 
 For 3D datasets - TITAN GPU with 24GB memory is required for training.
 
@@ -48,8 +48,8 @@ It will run ICAM with default parameters on the simulated squares dataset, and s
 Add this dataloader to `train.py` as another option. 
 
 - It is recommended to resize your datasets to [128, 128] for 2D datasets or [128, 160, 128] for 3D datasets. 
-
-- Alternatively, some changes might be needed in the networks to run on datasets of different dimensions. See `networks.py` and `networks_3d.py`.
+Alternatively, some changes might be needed in the networks to run on datasets of different dimensions. See `networks.py` and `networks_3d.py`. 
+`nz` parameter might also need to be changed in `options.py`.
 
 ## Reference
 
