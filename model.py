@@ -667,12 +667,12 @@ class ICAM(nn.Module):
         """
         checkpoint = torch.load(model_dir, map_location={device_0: device_1})
         if train:
-            self.dis1.load_state_dict(checkpoint['dis1'])
-            self.dis2.load_state_dict(checkpoint['dis2'])
-            self.disContent.load_state_dict(checkpoint['disContent'])
-        self.enc_c.load_state_dict(checkpoint['enc_c'])
-        self.enc_a.load_state_dict(checkpoint['enc_a'])
-        self.gen.load_state_dict(checkpoint['gen'])
+            self.dis1.load_state_dict(checkpoint['dis1'], strict=False)
+            self.dis2.load_state_dict(checkpoint['dis2'], strict=False)
+            self.disContent.load_state_dict(checkpoint['disContent'], strict=False)
+        self.enc_c.load_state_dict(checkpoint['enc_c'], strict=False)
+        self.enc_a.load_state_dict(checkpoint['enc_a'], strict=False)
+        self.gen.load_state_dict(checkpoint['gen'], strict=False)
 
         try:
             it = checkpoint['it']

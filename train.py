@@ -249,9 +249,9 @@ def _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader):
     if opts.regression:
         val_mse[ep] = np.mean(val_mse_temp)
         val_mae[ep] = np.mean(val_mae_temp)
-        if val_mae[ep] >= np.max(val_mae):
-            save_opts['val_mse'] = np.max(val_mse[ep])
-            save_opts['val_mae'] = np.max(val_mae[ep])
+        if val_mae[ep] <= np.min(val_mae[:ep]):
+            save_opts['val_mse'] = val_mse[ep]
+            save_opts['val_mae'] = val_mae[ep]
 
         print('Total it: {:d} (ep {:d}, it {:d}), Val MAE: {:.2f}, '
               'Val MSE: {:.2f}, Elapsed time: {:0>2}:{:0>2}:{:05.2f}'
@@ -290,7 +290,7 @@ def _save_best_models(opts, model):
         saver.write_model(ep, total_it, iter_counter, model, model_name='model_cc_b')
     if opts.cross_corr and (val_cross_corr_a[ep] >= np.max(val_cross_corr_a)):
         saver.write_model(ep, total_it, iter_counter, model, model_name='model_cc_a')
-    if opts.regression and (val_mae[ep] >= np.max(val_mae)):
+    if opts.regression and (val_mae[ep] <= np.min(val_mae[:ep])):
         saver.write_model(ep, total_it, iter_counter, model, model_name='model_mae')
 
 
