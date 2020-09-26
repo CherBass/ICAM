@@ -59,8 +59,7 @@ If this repository was useful to your work, please consider citing us:
 
 `@article{bass2020icam,
   title={ICAM: Interpretable Classification via Disentangled Representations and Feature Attribution Mapping},
-  author={Bass, Cher and da Silva, Mariana and Sudre, Carole and Tudosiu, Petru-Daniel and Smith, Stephen and Robinson, Emma},
-  journal={arXiv preprint arXiv:2006.08287},
+  author={Bass, C and Silva, MD and Sudre, CH and Tudosiu, PD and Smith, SM and Robinson, EC},
+  journal={NeurIPS 2020},
   year={2020}
 }`
-
