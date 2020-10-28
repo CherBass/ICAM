@@ -249,7 +249,7 @@ def _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader):
     if opts.regression:
         val_mse[ep] = np.mean(val_mse_temp)
         val_mae[ep] = np.mean(val_mae_temp)
-        if val_mae[ep] <= np.min(val_mae[:ep]):
+        if val_mae[ep] <= np.min(val_mae[:ep+1]):
             save_opts['val_mse'] = val_mse[ep]
             save_opts['val_mae'] = val_mae[ep]
 
