@@ -107,7 +107,7 @@ class NetGen(nn.Module):
         dec3 = [_make_layer(self, BasicBlock_up_3d, tch//2, 1, down=False, in_planes=tch, use_upsample=False)]
         tch = tch//2
 
-        # if data between -1 to 1 use Tanh, otherwise use Sigmoid
+        # if data between -1 to 1 use , otherwise use Sigmoid
         dec4 = [nn.ConvTranspose3d(tch, output_dim, kernel_size=1, stride=1, padding=0)]+[nn.Tanh()]
         # dec4 = [nn.ConvTranspose3d(tch, output_dim, kernel_size=1, stride=1, padding=0)]+[nn.Sigmoid()]
 

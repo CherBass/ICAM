@@ -235,11 +235,35 @@ class GenHelper(Dataset):
     def __len__(self):
         return self.length
 
+def train_val_test_split(ds, val_split=0.1, test_split=0.1, random_seed=None):
+    '''
+    This is a pytorch generic function that takes a data.Dataset object and splits it to train, validation, and test.
+    :param ds: data
+    :param split_fold: train val split
+    :param random_seed: seed
+    :return: train, val, test datasets
+    '''
+    if random_seed != None:
+        np.random.seed(random_seed)
+
+    dslen = len(ds)
+    indices = list(range(dslen))
+    val_size = int(dslen * val_split)
+    test_size = int(dslen * test_split)
+    train_size = int(dslen-val_size-test_size)
+    np.random.shuffle(indices)
+    train_mapping = indices[:train_size]
+    val_mapping = indices[train_size:train_size+val_size]
+    test_mapping = indices[train_size+val_size:train_size+val_size+test_size]
+    train = GenHelper(ds, train_size, train_mapping)
+    val = GenHelper(ds, val_size, val_mapping)
+    test = GenHelper(ds, test_size, test_mapping)
+
+    return train, val, test
 
 def train_valid_split(ds, split_fold=0.1, random_seed=None):
     """
-    This is a pytorch generic function that takes a data.Dataset object and splits it to validation and training
-    efficiently.
+    This is a pytorch generic function that takes a data.Dataset object and splits it to train, validation.
     :param ds: data
     :param split_fold: train val split
     :param random_seed: seed
@@ -324,13 +348,9 @@ def init_biobank_age_dataloader(opt, shuffle_test=False):
                                       get_id = opt.get_id,
                                    transform=transforms)
 
-    healthy_dataloader_train, healthy_dataloader_val = train_valid_split(healthy_train, split_fold=0.1,
+    healthy_dataloader_train, healthy_dataloader_val, healthy_dataloader_test = train_val_test_split(healthy_train, val_split=0.05, test_split=0.05,
                                                                          random_seed=opt.random_seed)
-    anomaly_dataloader_train, anomaly_dataloader_val = train_valid_split(anomaly_train, split_fold=0.1,
-                                                                         random_seed=opt.random_seed)
-    healthy_dataloader_val, healthy_dataloader_test = train_valid_split(healthy_dataloader_val, split_fold=0.5,
-                                                                         random_seed=opt.random_seed)
-    anomaly_dataloader_val, anomaly_dataloader_test = train_valid_split(anomaly_dataloader_val, split_fold=0.5,
+    anomaly_dataloader_train, anomaly_dataloader_val, anomaly_dataloader_test = train_val_test_split(anomaly_train, val_split=0.05, test_split=0.05,
                                                                          random_seed=opt.random_seed)
 
     print('Train data length: ', len(healthy_dataloader_train), 'Val data length: ',len(healthy_dataloader_val), 'Test data length: ', len(healthy_dataloader_test))
