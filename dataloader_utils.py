@@ -12,7 +12,34 @@ from biobank_dataloader import *
 import torchvision
 import SimpleITK as sitk
 import random
+from PIL import Image
 
+def tensor2img(img):
+    img = img.cpu().numpy()[0][0] * 255.0
+    return img.astype(np.uint8)
+
+def save_imgs(imgs, names, path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    for img, name in zip(imgs, names):
+        img = tensor2img(img)
+        img = Image.fromarray(img, 'L')
+        img.save(os.path.join(path, name + '.jpg'))
+
+
+def line_best_fit(X, Y):
+
+    xbar = sum(X)/len(X)
+    ybar = sum(Y)/len(Y)
+    n = len(X) # or len(Y)
+
+    numer = sum([xi*yi for xi,yi in zip(X, Y)]) - n * xbar * ybar
+    denum = sum([xi**2 for xi in X]) - n * xbar**2
+
+    b = numer / denum
+    a = ybar - b * xbar
+
+    return a, b
 
 def whitening(image):
     """Whitening. Normalises image to zero mean and unit variance."""

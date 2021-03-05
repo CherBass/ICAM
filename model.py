@@ -679,3 +679,171 @@ class ICAM(nn.Module):
         except:
             it = 0
         return checkpoint['ep'], checkpoint['total_it'], it
+
+    # function for translation from one image of one class to another class
+    # (using rejection sampling - this will give the mean and variance maps)
+    def test_forward_random_group(self, image, c_org=None, num=50):
+        """
+
+        :param image: image input
+        :param c_org: label of image
+        :param num: number of times to sample from attribute latent space (for mean and variance maps)
+        :return:
+        """
+        z_content = self.enc_c.forward(image)
+
+        if len(image.size()) == 5:
+            output = torch.zeros((num, image.size(1), image.size(2), image.size(3), image.size(4)))
+            diff_m_pos = torch.zeros((num, image.size(1), image.size(2), image.size(3), image.size(4)))
+            diff_m_neg = torch.zeros((num, image.size(1), image.size(2), image.size(3), image.size(4)))
+        else:
+            output = torch.zeros((num, image.size(1), image.size(2), image.size(3)))
+            diff_m_pos = torch.zeros((num, image.size(1), image.size(2), image.size(3)))
+            diff_m_neg = torch.zeros((num, image.size(1), image.size(2), image.size(3)))
+
+        output = output.to(self.device)
+        diff_m_pos = diff_m_pos.to(self.device)
+        diff_m_neg = diff_m_neg.to(self.device)
+        z_random = torch.zeros((num, self.nz)).to(self.device)
+        flag = True
+        i = 0
+        k = 0
+        if c_org[0, 0] == 1:
+            class_num = 1
+        elif c_org[0, 1] == 1:
+            class_num = 0
+        while flag:
+            k = k + 1
+            z_random_temp = self._get_z_random(1, self.nz, 'gauss')
+            _, _, pred_random, _ = self.enc_a.forward(x=None, z=z_random_temp.detach())
+            prob, pred_ind = torch.max(pred_random, 1)
+            if (pred_ind == class_num) and (i < num) and (prob > 0.9):
+                z_random[i] = z_random_temp
+                i = i + 1
+            if i == num - 1:
+                flag = False
+            elif k > int(300 * 2 * 50):
+                z_random = self._get_z_random(num, self.nz, 'gauss')
+                print('Random z not separable')
+                flag = False
+
+        c_inv = 1 - c_org
+
+        for z in range(num):
+            z_temp = z_random[z].unsqueeze(0)
+            output[z] = self.gen.forward(x=z_content, z=z_temp, c=c_inv)
+
+            diff_m = (output[z].unsqueeze(0) - image)
+            diff_m_pos[z] = diff_m
+            diff_m_neg[z] = -diff_m
+
+        output = torch.mean(output, dim=0, keepdim=True)
+        diff_m_pos_mean = torch.mean(diff_m_pos, dim=0, keepdim=True)
+        diff_m_neg_mean = torch.mean(diff_m_neg, dim=0, keepdim=True)
+        diff_m_pos_std = torch.std(diff_m_pos, dim=0, keepdim=True)
+        diff_m_neg_std = -diff_m_pos_std
+        return output, diff_m_pos_mean, diff_m_neg_mean, diff_m_pos_std, diff_m_neg_std
+
+    # interpolation between 2 images
+    def test_interpolation(self, image, c_org=None):
+        """
+
+        :param image: input image - should be batch size of 2 for the 2 images for interpolation
+        :param c_org: label of images
+        :return:
+        """
+        half_size = image.size(0) // 2
+        image_a, image_b = torch.split(image, half_size, dim=0)
+        z_content = self.enc_c.forward(image)
+        z_content_a, z_content_b = torch.split(z_content, half_size, dim=0)
+        c_org_a, c_org_b = torch.split(c_org, half_size, dim=0)
+        mu, logvar, _, _ = self.enc_a.forward(image)
+        std = logvar.mul(0.5).exp_()
+        eps = self._get_z_random(std.size(0), std.size(1), 'gauss')
+        z_attr = eps.mul(std).add_(mu)
+        z_attr_a, z_attr_b = torch.split(z_attr, half_size, dim=0)
+
+        # image transition
+        num_interpolation = 10
+        temp = torch.FloatTensor(half_size, self.nz)
+        temp.copy_(z_attr_a)
+        dz = (z_attr_b - z_attr_a) / num_interpolation
+        z = torch.FloatTensor(num_interpolation, self.nz)
+        for i in range(num_interpolation):
+            temp[:, :] = z_attr_a[:, :] + i * dz[:, :]
+            z[i, :] = temp
+        z = z.to(self.device)
+
+        outputs_a = []
+        diff_map_a_pos = []
+        diff_map_a_neg = []
+        class_pred = []
+        reg_pred = []
+        for z_temp in z:
+            z_temp = z_temp.unsqueeze(0)
+            _, _, cls, reg = self.enc_a.forward(image, z=z_temp)
+            _, cls = torch.max(cls, 1)
+            output = self.gen.forward(x=z_content_a, z=z_temp, c=c_org_b)
+            outputs_a.append(output)
+            diff_map = output - image_a
+            diff_map_a_pos.append(diff_map)
+            diff_map_a_neg.append(-diff_map)
+            class_pred.append(cls.cpu().numpy())
+            reg_pred.append(reg.cpu().numpy())
+
+        num_interpolation = 10
+        temp = torch.FloatTensor(half_size, self.nz)
+        temp.copy_(z_attr_b)
+        dz = (z_attr_a - z_attr_b) / num_interpolation
+        z = torch.FloatTensor(num_interpolation, self.nz)
+        for i in range(num_interpolation):
+            temp[:, :] = z_attr_b[:, :] + i * dz[:, :]
+            z[i, :] = temp
+        z = z.to(self.device)
+
+        outputs_b = []
+        diff_map_b_pos = []
+        diff_map_b_neg = []
+        i = 0
+        for z_temp in z:
+            z_temp = z_temp.unsqueeze(0)
+            if i == 0:
+                _, _, cls, reg = self.enc_a.forward(image, z=z_temp)
+                _, cls = torch.max(cls, 1)
+                class_pred.append(cls.cpu().numpy())
+                reg_pred.append(reg.cpu().numpy())
+            output = self.gen.forward(x=z_content_b, z=z_temp, c=c_org_a)
+            outputs_b.append(output)
+            diff_map = output - image_b
+            diff_map_b_pos.append(diff_map)
+            diff_map_b_neg.append(-diff_map)
+            i = i + 1
+
+        return outputs_a, diff_map_a_pos, diff_map_a_neg, outputs_b, diff_map_b_pos, diff_map_b_neg, class_pred, reg_pred
+
+    # for transfer between 2 images
+    def test_forward_transfer(self, image, c_org):
+        """
+
+        :param image: input images
+        :param c_org: corresponding labels of the images
+        :return:
+        """
+        half_size = image.size(0) // 2
+        z_content = self.enc_c.forward(image)
+        mu, logvar, _, _ = self.enc_a.forward(image)
+        std = logvar.mul(0.5).exp_()
+        eps = self._get_z_random(std.size(0), std.size(1), 'gauss')
+        z_attr = eps.mul(std).add_(mu)
+
+        z_content_a, z_content_b = torch.split(z_content, half_size, dim=0)
+        content = torch.cat((z_content_b, z_content_a), 0)
+
+        output = self.gen.forward(x=content, z=z_attr, c=c_org)
+        output_b, output_a = torch.split(output, half_size, dim=0)
+        input_a, input_b = torch.split(image, half_size, dim=0)
+
+        diff_a = output_a - input_a
+        diff_b = output_b - input_b
+
+        return output_a, diff_a, -diff_a, output_b, diff_b, -diff_b

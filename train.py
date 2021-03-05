@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 import time
 import json
 import torch
+from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score, mean_absolute_error, mean_squared_error
 random_seed = 8
 
 
@@ -47,7 +48,7 @@ def main():
 
     print('\n--- load dataset ---')
     # add new dataloader in _load_dataloader(), and in dataloader_utils.py
-    healthy_dataloader, healthy_val_dataloader, _, anomaly_dataloader, anomaly_val_dataloader, _ = _load_dataloader(opts)
+    healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = _load_dataloader(opts)
 
     print('\n--- load model ---')
     model = ICAM(opts)
@@ -129,7 +130,11 @@ def main():
             saver.write_model(ep, total_it, 0, model, epoch=True)
             saver.write_img(ep, total_it, model)
 
+        # example validation
         _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader)
+
+    # example test
+    _test(opts, model, healthy_test_dataloader, anomaly_test_dataloader)
 
     # save last model
     saver.write_model(ep, total_it, iter_counter, model, model_name='model_last')
@@ -170,71 +175,71 @@ def _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader):
     Validation function for classification and regression
     :param opts:
     :param model: networks
-    :param healthy_val_dataloader:
-    :param anomaly_val_dataloader:
+    :param healthy_test_dataloader:
+    :param anomaly_test_dataloader:
     :return:
     """
     e = np.arange(opts.n_ep)
-    val_accuracy_temp = np.zeros((0))
-    val_f1_temp = np.zeros((0))
-    val_precision_temp = np.zeros((0))
-    val_recall_temp = np.zeros((0))
+    val_pred_temp = np.zeros((0))
+    val_labels = np.zeros((0))
     if opts.regression:
-        val_mse_temp = np.zeros((0))
-        val_mae_temp = np.zeros((0))
-        val_pred_temp = np.zeros((0))
-        val_labels_temp = np.zeros((0))
+        val_reg_pred_temp = np.zeros((0))
+        val_reg_labels = np.zeros((0))
     if opts.cross_corr:
         val_cross_corr_temp_a = np.zeros((0))
         val_cross_corr_temp_b = np.zeros((0))
     healthy_val_iter = iter(healthy_val_dataloader)
     anomaly_val_iter = iter(anomaly_val_dataloader)
 
-    min_len = np.minimum(len(anomaly_val_dataloader), len(healthy_val_dataloader))
-    for j in range(min_len):
-        healthy_val_images, healthy_val_label_reg, _ = healthy_val_iter.next()
-        anomaly_val_images, anomaly_val_label_reg, mask = anomaly_val_iter.next()
-        healthy_val_c_org = torch.zeros((healthy_val_images.size(0), opts.num_domains)).to(opts.device)
-        healthy_val_c_org[:, 0] = 1
-        anomaly_val_c_org = torch.zeros((healthy_val_images.size(0), opts.num_domains)).to(opts.device)
-        anomaly_val_c_org[:, 1] = 1
-        images_val = torch.cat((healthy_val_images, anomaly_val_images), dim=0).type(torch.FloatTensor)
-        c_org_val = torch.cat((healthy_val_c_org, anomaly_val_c_org), dim=0).type(torch.FloatTensor)
-        label_reg_val = torch.cat((healthy_val_label_reg, anomaly_val_label_reg), dim=0).type(torch.FloatTensor)
+    # anomaly dataset should be the same or smaller size than healthy
+    for j in range(len(healthy_val_dataloader)):
+        if j < len(anomaly_val_dataloader):
+            healthy_val_images, reg_label_healthy, _ = healthy_val_iter.next()
+            anomaly_val_images, reg_label_anomaly, mask = anomaly_val_iter.next()
+            healthy_val_c_org = torch.zeros((healthy_val_images.size(0), opts.num_domains)).to(opts.device)
+            healthy_val_c_org[:, 0] = 1
+            anomaly_val_c_org = torch.zeros((healthy_val_images.size(0), opts.num_domains)).to(opts.device)
+            anomaly_val_c_org[:, 1] = 1
+            images_val = torch.cat((healthy_val_images, anomaly_val_images), dim=0).type(torch.FloatTensor)
+            c_org_val = torch.cat((healthy_val_c_org, anomaly_val_c_org), dim=0).type(torch.FloatTensor)
+            reg_val = torch.cat((reg_label_healthy[0], reg_label_anomaly[0]), dim=0).type(torch.FloatTensor)
+
+        else:
+            healthy_val_images, reg_label_healthy, _ = healthy_val_iter.next()
+            healthy_val_c_org = torch.zeros((healthy_val_images.size(0), opts.num_domains)).to(opts.device)
+            healthy_val_c_org[:, 0] = 1
+            images_val = healthy_val_images
+            c_org_val = healthy_val_c_org
+            reg_val = reg_label_healthy[0].type(torch.FloatTensor)
+
         images_val = images_val.to(opts.device).detach()
         c_org_val = c_org_val.to(opts.device).detach()
-        label_reg_val = label_reg_val.to(opts.device).detach()
-        if len(mask.size()) > 2:
-            mask = mask.to(opts.device).detach()
-        else:
-            mask = None
+        reg_val = reg_val.to(opts.device).detach()
+        mask = mask.to(opts.device).detach()
 
-        accuracy, f1, precision, recall = model.classification_scores(images_val, c_org_val)
-        val_accuracy_temp = np.append(val_accuracy_temp, accuracy)
-        val_f1_temp = np.append(val_f1_temp, f1)
-        val_precision_temp = np.append(val_precision_temp, precision)
-        val_recall_temp = np.append(val_recall_temp, recall)
+        _, _, pred, reg_pred = model.enc_a.forward(images_val)
+        _, y_pred = torch.max(pred, 1)
+        _, labels_temp = torch.max(c_org_val, 1)
+
+        val_pred_temp = np.append(val_pred_temp, y_pred.data.cpu().numpy())
+        val_labels = np.append(val_labels, labels_temp.data.cpu().numpy())
         if opts.regression:
-            mse, mae, pred = model.regression(images_val, label_reg_val)
-            val_mse_temp = np.append(val_mse_temp, mse)
-            val_mae_temp = np.append(val_mae_temp, mae)
-            val_pred_temp = np.append(val_pred_temp, pred)
-            val_labels_temp = np.append(val_labels_temp,
-                                        label_reg_val.squeeze(1).detach().cpu().numpy().astype(float))
+            val_reg_pred_temp = np.append(val_reg_pred_temp, reg_pred.data.cpu().numpy())
+            val_reg_labels = np.append(val_reg_labels, reg_val.data.cpu().numpy())
 
         if opts.cross_corr:
             cross_corr_a, cross_corr_b = model.cross_correlation(images_val, mask, c_org_val)
             val_cross_corr_temp_a = np.append(val_cross_corr_temp_a, cross_corr_a)
             val_cross_corr_temp_b = np.append(val_cross_corr_temp_b, cross_corr_b)
 
+    val_accuracy[ep] = accuracy_score(val_pred_temp, val_labels)
+    val_f1[ep] = f1_score(val_pred_temp, val_labels, average='macro')
+    val_precision[ep] = precision_score(val_pred_temp, val_labels, average='macro')
+    val_recall[ep] = recall_score(val_pred_temp, val_labels, average='macro')
+
     time_elapsed = time.time() - t0
     hours, rem = divmod(time_elapsed, 3600)
     minutes, seconds = divmod(rem, 60)
-
-    val_accuracy[ep] = np.mean(val_accuracy_temp)
-    val_f1[ep] = np.mean(val_f1_temp)
-    val_precision[ep] = np.mean(val_precision_temp)
-    val_recall[ep] = np.mean(val_recall_temp)
 
     print('Total it: {:d} (ep {:d}, it {:d}), Val Accuracy: {:.2f}, '
           'Val F1 score: {:.2f}, Elapsed time: {:0>2}:{:0>2}:{:05.2f}'
@@ -247,8 +252,8 @@ def _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader):
         save_opts['val_recall'] = np.max(val_recall[ep])
 
     if opts.regression:
-        val_mse[ep] = np.mean(val_mse_temp)
-        val_mae[ep] = np.mean(val_mae_temp)
+        val_mse[ep] = mean_squared_error(val_reg_labels, val_reg_pred_temp)
+        val_mae[ep] = mean_absolute_error(val_reg_labels, val_reg_pred_temp)
         if val_mae[ep] <= np.min(val_mae[:ep+1]):
             save_opts['val_mse'] = val_mse[ep]
             save_opts['val_mae'] = val_mae[ep]
@@ -256,6 +261,17 @@ def _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader):
         print('Total it: {:d} (ep {:d}, it {:d}), Val MAE: {:.2f}, '
               'Val MSE: {:.2f}, Elapsed time: {:0>2}:{:0>2}:{:05.2f}'
               .format(total_it, ep, iter_counter, val_mae[ep], val_mse[ep], int(hours), int(minutes), seconds))
+
+        x, y = line_best_fit(val_reg_labels, val_reg_pred_temp)
+        yfit = [x + y * xi for xi in val_reg_labels]
+        plt.figure()
+        plt.plot(val_reg_labels, val_reg_pred_temp, '+')
+        plt.plot(val_reg_labels, yfit, 'k', linewidth=1)
+        plt.xlabel('true values')
+        plt.ylabel('predicted values')
+        plt.title('True vs predicted values plot')
+        plt.savefig(opts.results_path + '/val_regression_plot.png')
+        plt.close()
 
     if opts.cross_corr:
         val_cross_corr_a[ep] = np.mean(val_cross_corr_temp_a)
@@ -273,6 +289,184 @@ def _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader):
     # save and plot results
     _save_best_models(opts, model)
     _plot_results(opts, e)
+    _translation_example(opts, model, healthy_val_images, anomaly_val_images, 'val_images')
+
+
+def _test(opts, model, healthy_test_dataloader, anomaly_test_dataloader):
+    """
+    Testing function for classification and regression
+    :param opts:
+    :param model: networks
+    :param healthy_test_dataloader:
+    :param anomaly_test_dataloader:
+    :return:
+    """
+    val_pred_temp = np.zeros((0))
+    val_labels = np.zeros((0))
+    if opts.regression:
+        val_reg_pred_temp = np.zeros((0))
+        val_reg_labels = np.zeros((0))
+    if opts.cross_corr:
+        val_cross_corr_temp_a = np.zeros((0))
+        val_cross_corr_temp_b = np.zeros((0))
+    healthy_val_iter = iter(healthy_test_dataloader)
+    anomaly_val_iter = iter(anomaly_test_dataloader)
+
+    # anomaly dataset should be the same or smaller size than healthy
+    for j in range(len(healthy_test_dataloader)):
+        if j < len(anomaly_test_dataloader):
+            healthy_val_images, reg_label_healthy, _ = healthy_val_iter.next()
+            anomaly_val_images, reg_label_anomaly, mask = anomaly_val_iter.next()
+            healthy_val_c_org = torch.zeros((healthy_val_images.size(0), opts.num_domains)).to(opts.device)
+            healthy_val_c_org[:, 0] = 1
+            anomaly_val_c_org = torch.zeros((healthy_val_images.size(0), opts.num_domains)).to(opts.device)
+            anomaly_val_c_org[:, 1] = 1
+            images_val = torch.cat((healthy_val_images, anomaly_val_images), dim=0).type(torch.FloatTensor)
+            c_org_val = torch.cat((healthy_val_c_org, anomaly_val_c_org), dim=0).type(torch.FloatTensor)
+            reg_val = torch.cat((reg_label_healthy[0], reg_label_anomaly[0]), dim=0).type(torch.FloatTensor)
+
+        else:
+            healthy_val_images, reg_label_healthy, _ = healthy_val_iter.next()
+            healthy_val_c_org = torch.zeros((healthy_val_images.size(0), opts.num_domains)).to(opts.device)
+            healthy_val_c_org[:, 0] = 1
+            images_val = healthy_val_images
+            c_org_val = healthy_val_c_org
+            reg_val = reg_label_healthy[0].type(torch.FloatTensor)
+
+        images_val = images_val.to(opts.device).detach()
+        c_org_val = c_org_val.to(opts.device).detach()
+        reg_val = reg_val.to(opts.device).detach()
+        mask = mask.to(opts.device).detach()
+
+        _, _, pred, reg_pred = model.enc_a.forward(images_val)
+        _, y_pred = torch.max(pred, 1)
+        _, labels_temp = torch.max(c_org_val, 1)
+
+        val_pred_temp = np.append(val_pred_temp, y_pred.data.cpu().numpy())
+        val_labels = np.append(val_labels, labels_temp.data.cpu().numpy())
+        if opts.regression:
+            val_reg_pred_temp = np.append(val_reg_pred_temp, reg_pred.data.cpu().numpy())
+            val_reg_labels = np.append(val_reg_labels, reg_val.data.cpu().numpy())
+
+        if opts.cross_corr:
+            cross_corr_a, cross_corr_b = model.cross_correlation(images_val, mask, c_org_val)
+            val_cross_corr_temp_a = np.append(val_cross_corr_temp_a, cross_corr_a)
+            val_cross_corr_temp_b = np.append(val_cross_corr_temp_b, cross_corr_b)
+
+    val_accuracy = accuracy_score(val_pred_temp, val_labels)
+    val_f1 = f1_score(val_pred_temp, val_labels, average='macro')
+    val_precision = precision_score(val_pred_temp, val_labels, average='macro')
+    val_recall= recall_score(val_pred_temp, val_labels, average='macro')
+
+    save_opts['test_accuracy'] = val_accuracy
+    save_opts['test_f1'] = val_f1
+    save_opts['test_precision'] = val_precision
+    save_opts['test_recall'] = val_recall
+
+    if opts.regression:
+        val_mae = mean_absolute_error(val_reg_labels, val_reg_pred_temp)
+        val_mse= mean_squared_error(val_reg_labels, val_reg_pred_temp)
+
+        save_opts['test_mse'] = val_mse
+        save_opts['test_mae'] = val_mae
+
+        x, y = line_best_fit(val_reg_labels, val_reg_pred_temp)
+        yfit = [x + y * xi for xi in val_reg_labels]
+        plt.figure()
+        plt.plot(val_reg_labels, val_reg_pred_temp, '+')
+        plt.plot(val_reg_labels, yfit, 'k', linewidth=1)
+        plt.xlabel('true values')
+        plt.ylabel('predicted values')
+        plt.title('True vs predicted values plot')
+        plt.savefig(opts.results_path + '/test_regression_plot.png')
+        plt.close()
+
+    if opts.cross_corr:
+        val_cross_corr_a = np.mean(val_cross_corr_temp_a)
+        val_cross_corr_b = np.mean(val_cross_corr_temp_b)
+
+        save_opts['test_cross_corr_a'] = val_cross_corr_a
+        save_opts['test_cross_corr_b'] = val_cross_corr_b
+
+    with open(opts.results_path + '/test_results.json', 'w') as file:
+        json.dump(save_opts, file, indent=4, sort_keys=True)
+
+    # plot translation figures
+    _translation_example(opts, model, healthy_val_images, anomaly_val_images, 'test_images')
+
+
+def _translation_example(opts, model, healthy_images, anomaly_images, test_val='val_images'):
+    """
+    Example translation function for 2D inputs only. For 3D inputs, it requires a different saving function.
+    :param opts:
+    :param model:
+    :param healthy_images:
+    :param anomaly_images:
+    :return:
+    """
+    path = opts.results_path + '/' + test_val
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    # Example usage with anomaly data (i.e. class=1)
+
+    # to achieve translation for anomaly data use label = [0, 1]
+    # to achieve translation for healthy data use label = [1, 0]
+    c_org_trans = torch.zeros((anomaly_images.size(0), opts.num_domains)).to(opts.device)
+    c_org_trans[:, 1] = 1
+
+    # to achieve reconstruction for anomaly data use label = [1, 0]
+    # to achieve reconstruction for healthy data use label = [0, 1]
+    c_org_recon = torch.zeros((anomaly_images.size(0), opts.num_domains)).to(opts.device)
+    c_org_recon[:, 0] = 1
+
+    images = anomaly_images.to(opts.device).detach()
+    c_org_trans = c_org_trans.to(opts.device).detach()
+    c_org_recon = c_org_recon.to(opts.device).detach()
+
+    with torch.no_grad():
+        # for group forward transfer you will need 1 image
+        # for translation c_org_trans will need to be the labels of the corresponding images
+        # num = number of times to sample the attribute latent space
+        output_b, diff_b_pos, diff_b_neg, diff_b_pos_std, diff_b_neg_std = model.test_forward_random_group(images,
+                                                                                                           c_org_trans,
+                                                                                                           num=100)
+        # for reconstruction c_org_recon will need to be the label of the opposite class
+        output_a, diff_a_pos, diff_a_neg, diff_a_pos_std, diff_a_neg_std = model.test_forward_random_group(images,
+                                                                                                           c_org_recon,
+                                                                                                           num=100)
+
+        assembled_images = torch.cat(
+            (images.cpu()[0:1, ::], output_b.cpu()[0:1, ::], diff_b_pos.cpu()[0:1, ::], diff_b_pos_std.cpu()[0:1, ::], output_a.cpu()[0:1, ::],
+             diff_a_pos.cpu()[0:1, ::], diff_a_pos_std.cpu()[0:1, ::]), 3)
+        # saved image: 'input_a', 'trans_image', 'trans_diff_mean', 'trans_diff_var', 'recon_image', 'recon_diff_mean', 'recon_diff_var'
+        name = 'group_translation'
+        img_filename = '%s/%s.jpg' % (path, name)
+        # saving for 2D inputs only
+        torchvision.utils.save_image(assembled_images / 2 + 0.5, img_filename, nrow=1)
+
+        # for forward transfer images will need to be batch size 2 - of the 2 images you want to transfer
+        # c_org will need to be the labels of the corresponding images
+        images = torch.cat((healthy_images, anomaly_images), dim=0).type(torch.FloatTensor)
+        c_org = torch.cat((c_org_trans, c_org_recon), dim=0).type(torch.FloatTensor)
+        images = images.to(opts.device).detach()
+        c_org = c_org.to(opts.device).detach()
+
+        outputs_a, diff_map_a_pos, diff_map_a_neg, outputs_b, diff_map_b_pos, diff_map_b_neg = model.test_forward_transfer(
+            images, c_org)
+
+        assembled_images_1 = torch.cat(
+            (healthy_images.cpu()[0:1, ::], outputs_a.cpu()[0:1, ::], diff_map_a_pos.cpu()[0:1, ::]), 3)
+        assembled_images_2 = torch.cat(
+            (anomaly_images.cpu()[0:1, ::], outputs_b.cpu()[0:1, ::],
+             diff_map_b_pos.cpu()[0:1, ::]), 3)
+        assembled_images = torch.cat((assembled_images_1, assembled_images_2), 2)
+
+        # saved image: 'input_a', 'trans_a_to_b_image', 'trans_a_to_b_diff', & 'input_b', 'trans_b_to_a_image', 'trans_b_to_a_diff'
+        name = 'forward_translation'
+        img_filename = '%s/%s.jpg' % (path, name)
+        # saving for 2D inputs only
+        torchvision.utils.save_image(assembled_images / 2 + 0.5, img_filename, nrow=1)
 
 
 def _save_best_models(opts, model):
