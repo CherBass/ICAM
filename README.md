@@ -55,6 +55,8 @@ Alternatively, some changes might be needed in the networks to run on datasets o
 
 https://arxiv.org/abs/2006.08287
 
+https://arxiv.org/abs/2103.02561
+
 If this repository was useful to your work, please consider citing us:
 
 `@article{bass2020icam,
@@ -62,4 +64,11 @@ If this repository was useful to your work, please consider citing us:
   author={Bass, C and Silva, MD and Sudre, CH and Tudosiu, PD and Smith, SM and Robinson, EC},
   journal={NeurIPS 2020},
   year={2020}
+}`
+
+`@article{bass2021icam,
+  title={ICAM-reg: Interpretable Classification and Regression with Feature Attribution for Mapping Neurological Phenotypes in Individual Scans},
+  author={Bass, Cher and da Silva, Mariana and Sudre, Carole and Williams, Logan ZJ and Tudosiu, Petru-Daniel and Alfaro-Almagro, Fidel and Fitzgibbon, Sean P and Glasser, Matthew F and Smith, Stephen M and Robinson, Emma C},
+  journal={arXiv preprint arXiv:2103.02561},
+  year={2021}
 }`
