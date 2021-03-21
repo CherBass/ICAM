@@ -7,12 +7,21 @@
 from dataloader_utils import *
 from options import TrainOptions
 from model import ICAM
-from matplotlib import pyplot as plt 
+from matplotlib import pyplot as plt
 import time
 import json
 import torch
-from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score, mean_absolute_error, mean_squared_error
-random_seed = 8
+from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score, mean_absolute_error, \
+    mean_squared_error
+
+RANDOM_SEED = 8
+IMAGE_SIZE = 128
+LATENT_3D = 640
+LATENT_2D = 64
+RESIZE_IMAGE = True
+RESIZE_SIZE = (128, 160, 128)
+AGE_RANGE_0 = (40,65)
+AGE_RANGE_1 = (65,90)
 
 
 def main():
@@ -22,10 +31,15 @@ def main():
     # initialise params
     parser = TrainOptions()
     opts = parser.parse()
-    opts.random_seed = random_seed
+    opts.random_seed = RANDOM_SEED
     opts.device = opts.device if torch.cuda.is_available() and opts.gpu else 'cpu'
     opts.name = opts.data_type + '_' + time.strftime("%d%m%Y-%H%M")
     opts.results_path = os.path.join(opts.result_dir, opts.name)
+    opts.image_size = IMAGE_SIZE
+    opts.age_range_0 = AGE_RANGE_0
+    opts.age_range_1 = AGE_RANGE_1
+    opts.resize_image = RESIZE_IMAGE
+    opts.resize_size = RESIZE_SIZE
     ep0 = 0
     total_it = 0
     val_accuracy = np.zeros(opts.n_ep)
@@ -41,14 +55,15 @@ def main():
     # saver for display and output
     if opts.data_dim == '3d':
         from saver_3d import Saver
-        opts.nz = 640
+        opts.nz = LATENT_3D
     else:
         from saver import Saver
-        opts.nz = 64
+        opts.nz = LATENT_2D
 
     print('\n--- load dataset ---')
     # add new dataloader in _load_dataloader(), and in dataloader_utils.py
-    healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = _load_dataloader(opts)
+    healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, \
+    anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = _load_dataloader(opts)
 
     print('\n--- load model ---')
     model = ICAM(opts)
@@ -131,10 +146,18 @@ def main():
             saver.write_img(ep, total_it, model)
 
         # example validation
-        _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader)
+        try:
+            _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader)
+        except Exception as e:
+            print(f'Encountered error during validation - {e}')
+            raise e
 
     # example test
-    _test(opts, model, healthy_test_dataloader, anomaly_test_dataloader)
+    try:
+        _test(opts, model, healthy_test_dataloader, anomaly_test_dataloader)
+    except Exception as e:
+        print(f'Encountered error during validation - {e}')
+        raise e
 
     # save last model
     saver.write_model(ep, total_it, iter_counter, model, model_name='model_last')
@@ -153,21 +176,24 @@ def _load_dataloader(opts):
     """
     if opts.data_type == 'syn2d':
         healthy_dataloader = init_synth_dataloader(
-            opts, anomaly=False, mode='train', batch_size=opts.batch_size//2)
+            opts, anomaly=False, mode='train', batch_size=opts.batch_size // 2)
         anomaly_dataloader = init_synth_dataloader(
-            opts, anomaly=True, mode='train', batch_size=opts.batch_size//2)
+            opts, anomaly=True, mode='train', batch_size=opts.batch_size // 2)
         healthy_val_dataloader = init_synth_dataloader(
-            opts, anomaly=False, mode='val', batch_size=opts.val_batch_size//2)
+            opts, anomaly=False, mode='val', batch_size=opts.val_batch_size // 2)
         anomaly_val_dataloader = init_synth_dataloader(
-            opts, anomaly=True, mode='val', batch_size=opts.val_batch_size//2)
+            opts, anomaly=True, mode='val', batch_size=opts.val_batch_size // 2)
         healthy_test_dataloader = init_synth_dataloader(
-            opts, anomaly=False, mode='test', batch_size=opts.val_batch_size//2)
+            opts, anomaly=False, mode='test', batch_size=opts.val_batch_size // 2)
         anomaly_test_dataloader = init_synth_dataloader(
-            opts, anomaly=True, mode='test', batch_size=opts.val_batch_size//2)
+            opts, anomaly=True, mode='test', batch_size=opts.val_batch_size // 2)
     elif opts.data_type == 'biobank_age':
-        healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = init_biobank_age_dataloader(opts)
+        healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, \
+        anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = init_biobank_age_dataloader(
+            opts)
 
-    return healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader
+    return healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, \
+           anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader
 
 
 def _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader):
@@ -192,8 +218,15 @@ def _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader):
     anomaly_val_iter = iter(anomaly_val_dataloader)
 
     # anomaly dataset should be the same or smaller size than healthy
-    for j in range(len(healthy_val_dataloader)):
-        if j < len(anomaly_val_dataloader):
+    anomaly_val_dataloader_len = len(anomaly_val_dataloader)
+    healthy_val_dataloader_len = len(healthy_val_dataloader)
+
+    if anomaly_val_dataloader_len > healthy_val_dataloader_len:
+        raise Exception(f'anaomaly dataloader len {anomaly_val_dataloader_len} is bigger than healthy dataloader'
+                        f' len {healthy_val_dataloader_len}')
+
+    for j in range(healthy_val_dataloader_len):
+        if j < anomaly_val_dataloader_len:
             healthy_val_images, reg_label_healthy, _ = healthy_val_iter.next()
             anomaly_val_images, reg_label_anomaly, mask = anomaly_val_iter.next()
             healthy_val_c_org = torch.zeros((healthy_val_images.size(0), opts.num_domains)).to(opts.device)
@@ -254,7 +287,7 @@ def _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader):
     if opts.regression:
         val_mse[ep] = mean_squared_error(val_reg_labels, val_reg_pred_temp)
         val_mae[ep] = mean_absolute_error(val_reg_labels, val_reg_pred_temp)
-        if val_mae[ep] <= np.min(val_mae[:ep+1]):
+        if val_mae[ep] <= np.min(val_mae[:ep + 1]):
             save_opts['val_mse'] = val_mse[ep]
             save_opts['val_mae'] = val_mae[ep]
 
@@ -294,7 +327,7 @@ def _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader):
 
 def _test(opts, model, healthy_test_dataloader, anomaly_test_dataloader):
     """
-    Testing function for classification and regression
+    Testing function for classification and regression with example translation
     :param opts:
     :param model: networks
     :param healthy_test_dataloader:
@@ -313,8 +346,16 @@ def _test(opts, model, healthy_test_dataloader, anomaly_test_dataloader):
     anomaly_val_iter = iter(anomaly_test_dataloader)
 
     # anomaly dataset should be the same or smaller size than healthy
-    for j in range(len(healthy_test_dataloader)):
-        if j < len(anomaly_test_dataloader):
+    anomaly_val_dataloader_len = len(anomaly_test_dataloader)
+    healthy_val_dataloader_len = len(healthy_test_dataloader)
+
+    if anomaly_val_dataloader_len > healthy_val_dataloader_len:
+        raise Exception(f'anaomaly dataloader len {anomaly_val_dataloader_len} is bigger than healthy dataloader'
+                        f' len {healthy_val_dataloader_len}')
+
+    # anomaly dataset should be the same or smaller size than healthy
+    for j in range(healthy_val_dataloader_len):
+        if j < anomaly_val_dataloader_len:
             healthy_val_images, reg_label_healthy, _ = healthy_val_iter.next()
             anomaly_val_images, reg_label_anomaly, mask = anomaly_val_iter.next()
             healthy_val_c_org = torch.zeros((healthy_val_images.size(0), opts.num_domains)).to(opts.device)
@@ -356,7 +397,7 @@ def _test(opts, model, healthy_test_dataloader, anomaly_test_dataloader):
     val_accuracy = accuracy_score(val_pred_temp, val_labels)
     val_f1 = f1_score(val_pred_temp, val_labels, average='macro')
     val_precision = precision_score(val_pred_temp, val_labels, average='macro')
-    val_recall= recall_score(val_pred_temp, val_labels, average='macro')
+    val_recall = recall_score(val_pred_temp, val_labels, average='macro')
 
     save_opts['test_accuracy'] = val_accuracy
     save_opts['test_f1'] = val_f1
@@ -365,7 +406,7 @@ def _test(opts, model, healthy_test_dataloader, anomaly_test_dataloader):
 
     if opts.regression:
         val_mae = mean_absolute_error(val_reg_labels, val_reg_pred_temp)
-        val_mse= mean_squared_error(val_reg_labels, val_reg_pred_temp)
+        val_mse = mean_squared_error(val_reg_labels, val_reg_pred_temp)
 
         save_opts['test_mse'] = val_mse
         save_opts['test_mae'] = val_mae
@@ -395,7 +436,7 @@ def _test(opts, model, healthy_test_dataloader, anomaly_test_dataloader):
     _translation_example(opts, model, healthy_val_images, anomaly_val_images, 'test_images')
 
 
-def _translation_example(opts, model, healthy_images, anomaly_images, test_val='val_images'):
+def _translation_example(opts, model, healthy_images, anomaly_images, save_name='val_images'):
     """
     Example translation function for 2D inputs only. For 3D inputs, it requires a different saving function.
     :param opts:
@@ -404,7 +445,7 @@ def _translation_example(opts, model, healthy_images, anomaly_images, test_val='
     :param anomaly_images:
     :return:
     """
-    path = opts.results_path + '/' + test_val
+    path = opts.results_path + '/' + save_name
     if not os.path.exists(path):
         os.makedirs(path)
 
@@ -437,9 +478,11 @@ def _translation_example(opts, model, healthy_images, anomaly_images, test_val='
                                                                                                            num=100)
 
         assembled_images = torch.cat(
-            (images.cpu()[0:1, ::], output_b.cpu()[0:1, ::], diff_b_pos.cpu()[0:1, ::], diff_b_pos_std.cpu()[0:1, ::], output_a.cpu()[0:1, ::],
+            (images.cpu()[0:1, ::], output_b.cpu()[0:1, ::], diff_b_pos.cpu()[0:1, ::], diff_b_pos_std.cpu()[0:1, ::],
+             output_a.cpu()[0:1, ::],
              diff_a_pos.cpu()[0:1, ::], diff_a_pos_std.cpu()[0:1, ::]), 3)
-        # saved image: 'input_a', 'trans_image', 'trans_diff_mean', 'trans_diff_var', 'recon_image', 'recon_diff_mean', 'recon_diff_var'
+        # saved image: 'input_a', 'trans_image', 'trans_diff_mean',
+        # 'trans_diff_var', 'recon_image', 'recon_diff_mean', 'recon_diff_var'
         name = 'group_translation'
         img_filename = '%s/%s.jpg' % (path, name)
         # saving for 2D inputs only
@@ -462,7 +505,8 @@ def _translation_example(opts, model, healthy_images, anomaly_images, test_val='
              diff_map_b_pos.cpu()[0:1, ::]), 3)
         assembled_images = torch.cat((assembled_images_1, assembled_images_2), 2)
 
-        # saved image: 'input_a', 'trans_a_to_b_image', 'trans_a_to_b_diff', & 'input_b', 'trans_b_to_a_image', 'trans_b_to_a_diff'
+        # saved image: 'input_a', 'trans_a_to_b_image', 'trans_a_to_b_diff',
+        # & 'input_b', 'trans_b_to_a_image', 'trans_b_to_a_diff'
         name = 'forward_translation'
         img_filename = '%s/%s.jpg' % (path, name)
         # saving for 2D inputs only

@@ -680,11 +680,10 @@ class ICAM(nn.Module):
             it = 0
         return checkpoint['ep'], checkpoint['total_it'], it
 
-    # function for translation from one image of one class to another class
-    # (using rejection sampling - this will give the mean and variance maps)
     def test_forward_random_group(self, image, c_org=None, num=50):
         """
-
+        Method for translation from one image of one class to another class.
+        Using rejection sampling - this will give the mean and variance maps.
         :param image: image input
         :param c_org: label of image
         :param num: number of times to sample from attribute latent space (for mean and variance maps)
@@ -744,10 +743,9 @@ class ICAM(nn.Module):
         diff_m_neg_std = -diff_m_pos_std
         return output, diff_m_pos_mean, diff_m_neg_mean, diff_m_pos_std, diff_m_neg_std
 
-    # interpolation between 2 images
     def test_interpolation(self, image, c_org=None):
         """
-
+        Method for interpolating between 2 input images
         :param image: input image - should be batch size of 2 for the 2 images for interpolation
         :param c_org: label of images
         :return:
@@ -821,10 +819,9 @@ class ICAM(nn.Module):
 
         return outputs_a, diff_map_a_pos, diff_map_a_neg, outputs_b, diff_map_b_pos, diff_map_b_neg, class_pred, reg_pred
 
-    # for transfer between 2 images
     def test_forward_transfer(self, image, c_org):
         """
-
+        Method for translating between 2 input images
         :param image: input images
         :param c_org: corresponding labels of the images
         :return:

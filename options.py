@@ -14,14 +14,13 @@ class TrainOptions():
         # data loader related
         self.parser.add_argument('--dataroot', type=str, default='./datasets',
                                  help='path to data')
-        self.parser.add_argument('--data_type', type=str, default='syn2d', help='data to load'
-                                                                                'options: syn2d [128, 128]'
-                                                                                'biobank_age [128, 160, 128]'
-                                                                                'add more dataloaders here')
-        self.parser.add_argument('--data_dim', type=str, default='2d', help='whether to load 2d or 3d networks'
-                                                                            'options: 2d, 3d')
-        self.parser.add_argument('--image_size', type=int,  default=128,
-                                 help='the height / width of the input image to network- synthetic 2D data')
+        self.parser.add_argument('--data_type', type=str, default='syn2d', choices=['syn2d', 'biobank_age'],
+                                 help='data to load' 
+                                      'options: syn2d [128, 128]'
+                                      'biobank_age [128, 160, 128]'
+                                      'add more dataloaders here')
+        self.parser.add_argument('--data_dim', type=str, default='2d', choices=['2d', '3d'],
+                                 help='whether to load 2d or 3d networks. Options: 2d, 3d')
 
         # biobank related
         self.parser.add_argument('--label_path', type=str, default='/data/biobank/biobank_labels_filtered.pkl',
@@ -31,14 +30,7 @@ class TrainOptions():
                                       'options: 0, ([0, 10])')
         self.parser.add_argument('--aug_bspline_deformation', type=float, default=0,
                                  help='whether to use bspline_deformation'
-                                      '0, ([5],[0, 2])')
-        self.parser.add_argument('--age_range_0', type=int, default=(40,65), help='age range for first class '
-                                                                                  '(40,65)')
-        self.parser.add_argument('--age_range_1', type=int, default=(65,90), help='age range for second class '
-                                                                                  '(65,90)')
-        self.parser.add_argument('--resize_size', type=int, default=(128, 160, 128),
-                                 help='resized image size for training 3D data')
-        self.parser.add_argument('--resize_image', type=int, default=1, help='whether to resize image')
+                                      'options: 0, ([5],[0, 2])')
         self.parser.add_argument('--get_id', type=bool, default=False, help='get subject id during testing')
 
         # ouptput related
@@ -52,9 +44,7 @@ class TrainOptions():
         self.parser.add_argument('--tch', type=int, default=16, help='# number of (starting) channels')
         self.parser.add_argument('--input_dim', type=int, default=1, help='# of input channels for each domain')
         self.parser.add_argument('--num_domains', type=int, default=2, help='# number of classes')
-        self.parser.add_argument('--nz', type=int, default=64,
-                                 help='# dimensions of attribute latent space- 2D: 64 (8x8) or 3D: 640 (8x10x8)')
-        self.parser.add_argument('--D_content_dis_cls_all1', type=float, default=0.5,
+        self.parser.add_argument('--D_content_dis_cls_all1', type=float, default=0.5, choices=[0, 1, 0.5],
                                  help='whether content encoder tries to classify all classes the same- '
                                                                                            'options: 0, 1, 0.5')
         # optimizer related

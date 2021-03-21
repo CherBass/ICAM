@@ -14,24 +14,18 @@ import SimpleITK as sitk
 import random
 from PIL import Image
 
-def tensor2img(img):
-    img = img.cpu().numpy()[0][0] * 255.0
-    return img.astype(np.uint8)
-
-def save_imgs(imgs, names, path):
-    if not os.path.exists(path):
-        os.makedirs(path)
-    for img, name in zip(imgs, names):
-        img = tensor2img(img)
-        img = Image.fromarray(img, 'L')
-        img.save(os.path.join(path, name + '.jpg'))
-
 
 def line_best_fit(X, Y):
+    """
+    Line of best fit for variables X, Y
+    :param X:
+    :param Y:
+    :return:
+    """
 
     xbar = sum(X)/len(X)
     ybar = sum(Y)/len(Y)
-    n = len(X) # or len(Y)
+    n = len(X)
 
     numer = sum([xi*yi for xi,yi in zip(X, Y)]) - n * xbar * ybar
     denum = sum([xi**2 for xi in X]) - n * xbar**2
@@ -262,6 +256,7 @@ class GenHelper(Dataset):
     def __len__(self):
         return self.length
 
+
 def train_val_test_split(ds, val_split=0.1, test_split=0.1, random_seed=None):
     '''
     This is a pytorch generic function that takes a data.Dataset object and splits it to train, validation, and test.
@@ -325,9 +320,7 @@ def init_synth_dataloader(opt, anomaly, mode='train', batch_size=2):
     dataset = SynthDataset(opt=opt, anomaly=anomaly,
                            mode=mode,
                            transform=transforms.Compose([
-                               torch.tensor,
-
-                           ]))
+                               torch.tensor,]))
 
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                              shuffle=True, drop_last=True)
@@ -344,7 +337,8 @@ def init_biobank_age_dataloader(opt, shuffle_test=False):
     :param shuffle_test: whether to shuffle test data
     :return: dataloader
     """
-    if (not opt.aug_rician_noise == None) or (not opt.aug_bspline_deformation == None) or (not opt.resize_image == None):
+    if (not opt.aug_rician_noise == None) or (not opt.aug_bspline_deformation == None) \
+            or (not opt.resize_image == None):
         transforms = []
     else:
         transforms = None
@@ -356,32 +350,35 @@ def init_biobank_age_dataloader(opt, shuffle_test=False):
         transforms.append(RicianNoise(noise_level=opt.aug_rician_noise))
 
     if opt.aug_bspline_deformation:
-        transforms.append(ElasticDeformationsBspline(num_controlpoints=opt.aug_bspline_deformation[0], sigma=opt.aug_bspline_deformation[1]))
+        transforms.append(ElasticDeformationsBspline(num_controlpoints=opt.aug_bspline_deformation[0],
+                                                     sigma=opt.aug_bspline_deformation[1]))
 
     if opt.aug_rician_noise or opt.aug_bspline_deformation or opt.resize_image:
         transforms = torchvision.transforms.Compose(transforms)
 
     healthy_train = BiobankRegAgeDataset(image_path=opt.dataroot+'_data',
-                              label_path=opt.label_path,
-                                      class_bins=opt.age_range_0,
-                                   class_label=0,
-                                      get_id=opt.get_id,
-                                      transform=transforms)
+                                         label_path=opt.label_path,
+                                         class_bins=opt.age_range_0,
+                                         class_label=0,
+                                         get_id=opt.get_id,
+                                         transform=transforms)
 
     anomaly_train = BiobankRegAgeDataset(image_path=opt.dataroot+'_data',
-                              label_path=opt.label_path,
-                                      class_bins=opt.age_range_1,
-                                      class_label=1,
-                                      get_id = opt.get_id,
-                                   transform=transforms)
+                                         label_path=opt.label_path,
+                                         class_bins=opt.age_range_1,
+                                         class_label=1,
+                                         get_id=opt.get_id,
+                                         transform=transforms)
 
-    healthy_dataloader_train, healthy_dataloader_val, healthy_dataloader_test = train_val_test_split(healthy_train, val_split=0.05, test_split=0.05,
-                                                                         random_seed=opt.random_seed)
-    anomaly_dataloader_train, anomaly_dataloader_val, anomaly_dataloader_test = train_val_test_split(anomaly_train, val_split=0.05, test_split=0.05,
-                                                                         random_seed=opt.random_seed)
+    healthy_dataloader_train, healthy_dataloader_val, healthy_dataloader_test \
+        = train_val_test_split(healthy_train, val_split=0.05, test_split=0.05, random_seed=opt.random_seed)
+    anomaly_dataloader_train, anomaly_dataloader_val, anomaly_dataloader_test \
+        = train_val_test_split(anomaly_train, val_split=0.05, test_split=0.05, random_seed=opt.random_seed)
 
-    print('Train data length: ', len(healthy_dataloader_train), 'Val data length: ',len(healthy_dataloader_val), 'Test data length: ', len(healthy_dataloader_test))
-    print('Train data length: ', len(anomaly_dataloader_train), 'Val data length: ',len(anomaly_dataloader_val), 'Test data length: ', len(anomaly_dataloader_test))
+    print('Train data length: ', len(healthy_dataloader_train), 'Val data length: ',
+          len(healthy_dataloader_val), 'Test data length: ', len(healthy_dataloader_test))
+    print('Train data length: ', len(anomaly_dataloader_train), 'Val data length: ',
+          len(anomaly_dataloader_val), 'Test data length: ', len(anomaly_dataloader_test))
 
     healthy_dataloader_train = torch.utils.data.DataLoader(healthy_dataloader_train, batch_size=opt.batch_size//2,
                                                            shuffle=True)
@@ -397,4 +394,5 @@ def init_biobank_age_dataloader(opt, shuffle_test=False):
     anomaly_dataloader_test = torch.utils.data.DataLoader(anomaly_dataloader_test, batch_size=opt.batch_size//2,
                                                          shuffle=shuffle_test)
 
-    return healthy_dataloader_train, healthy_dataloader_val, healthy_dataloader_test, anomaly_dataloader_train, anomaly_dataloader_val, anomaly_dataloader_test
+    return healthy_dataloader_train, healthy_dataloader_val, healthy_dataloader_test, \
+           anomaly_dataloader_train, anomaly_dataloader_val, anomaly_dataloader_test
