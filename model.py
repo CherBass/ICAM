@@ -252,6 +252,7 @@ class ICAM(nn.Module):
 
         # rejection sampling
         self._rejection_sampling(half_size)
+        torch.cuda.empty_cache()  # clear cached GPU memory
 
         # first cross translation
         input_content_forA = torch.cat((self.z_content_b, self.z_content_a, self.z_content_b), 0)
@@ -281,8 +282,10 @@ class ICAM(nn.Module):
 
         # get reconstructed encoded z_a
         self.mu_recon, self.logvar_recon, self.E_pred_cls_fake, self.E_pred_reg_fake = self.enc_a.forward(self.fake_encoded_img)
+        torch.cuda.empty_cache()  # clear cached GPU memory
         self.mu_a_recon, self.mu_b_recon = torch.split(self.mu_recon, half_size, 0)
         _, _, self.E_pred_cls_recon, self.E_pred_reg_recon = self.enc_a.forward(self.fake_recon_img)
+        torch.cuda.empty_cache()  # clear cached GPU memory
         std_recon = self.logvar_recon.mul(0.5).exp_()
         eps_recon = self._get_z_random(std_recon.size(0), std_recon.size(1), 'gauss')
         self.z_attr_recon = eps_recon.mul(std_recon).add_(self.mu_recon)
@@ -290,7 +293,9 @@ class ICAM(nn.Module):
 
         # second cross translation
         self.fake_A_recon = self.gen.forward(x=self.z_content_recon_a, z=self.z_attr_recon_a, c=None)
+        torch.cuda.empty_cache()  # clear cached GPU memory
         self.fake_B_recon = self.gen.forward(x=self.z_content_recon_b, z=self.z_attr_recon_b, c=None)
+        torch.cuda.empty_cache()  # clear cached GPU memory
 
         # latent regression
         if self.opts.loss_latent_l1_random:
