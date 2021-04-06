@@ -17,7 +17,7 @@ Install Python 3.7 with the following libraries:
 `Pytorch 1.1.0, torchvision 0.2.2, argparse, matplotlib, PIL, tensorboardX, nibabel, scipy, numpy, sklearn, skimage, h5py, SimpleITK, pandas`
 
 Now also works with:
-`Pytorch 1.8.1, torchvision 0.2.2`
+`Pytorch 1.8.1, torchvision 0.9.1`
 
 For 3D datasets - TITAN GPU with 24GB memory is required for training.
 
