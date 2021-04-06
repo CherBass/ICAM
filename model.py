@@ -395,9 +395,9 @@ class ICAM(nn.Module):
 
         # update G - generator loss on fake generated images
         self.backward_G_alone()
-        self.gen_opt.step()
         self.enc_c_opt.step()
         self.enc_a_opt.step()
+        self.gen_opt.step()
 
     def backward_EG(self):
         """
