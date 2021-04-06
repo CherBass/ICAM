@@ -14,6 +14,7 @@ import torch
 from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score, mean_absolute_error, \
     mean_squared_error
 
+torch.autograd.set_detect_anomaly(True)
 RANDOM_SEED = 8
 IMAGE_SIZE = 128
 LATENT_3D = 640
