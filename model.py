@@ -394,8 +394,6 @@ class ICAM(nn.Module):
         self.backward_EG()
 
         # update G - generator loss on fake generated images
-        self.enc_c_opt.zero_grad()
-        self.gen_opt.zero_grad()
         self.backward_G_alone()
         self.gen_opt.step()
         self.enc_c_opt.step()

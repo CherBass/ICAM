@@ -127,6 +127,8 @@ def main():
                     train_mse, train_mae, _ = model.regression(images, label_reg)
             if total_it == 0:
                 saver.write_img(ep, total_it, model)
+            elif total_it % opts.display_freq == 0:
+                saver.write_img(ep, total_it, model)
             total_it += 1
 
             # save to tensorboard
