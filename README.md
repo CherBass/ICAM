@@ -81,6 +81,7 @@ Alternatively, some changes might be needed in the networks to run on datasets o
   - data_dim - run with data_dim = '3d'
   - regression - to run with regression, change regression to True. Note that an appropriate dataset would need to be used (not possible with 2D simulated dataset example).
   - label_path - new label path
+  - dataroot - new image folder path
   - data_type - change to new datatype e.g. biobank_age
 
 
