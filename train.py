@@ -62,9 +62,13 @@ def main():
         opts.nz = LATENT_2D
 
     print('\n--- load dataset ---')
-    # add new dataloader in _load_dataloader(), and in dataloader_utils.py
-    healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, \
-    anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = _load_dataloader(opts)
+    # can add option for new dataloaders here
+    if opts.data_type == 'syn2d':
+        healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, \
+        anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = _load_dataloader(opts)
+    elif opts.data_type == 'biobank_age':
+        healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, \
+        anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = init_biobank_age_dataloader(opts)
 
     print('\n--- load model ---')
     model = ICAM(opts)
