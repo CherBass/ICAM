@@ -60,17 +60,15 @@ Add this dataloader to `train.py` as another option.
 - Example of creating dataloaders in done using init_biobank_age_dataloader() function in dataloader_utils.py
 
 - Once a new datataloader is added, it should be added as an option in train.py. E.g.:
-- 
-`
-  print('\n--- load dataset ---')
+
+  `print('\n--- load dataset ---')
   # can add option for new dataloaders here
   if opts.data_type == 'syn2d':
       healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, \
       anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = _load_dataloader(opts)
   elif opts.data_type == 'biobank_age':
       healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, \
-      anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = init_biobank_age_dataloader(opts)
-`
+      anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = init_biobank_age_dataloader(opts)`
 
 - It is recommended to resize your datasets to [128, 128] for 2D datasets or [128, 160, 128] for 3D datasets. 
 Alternatively, some changes might be needed in the networks to run on datasets of different dimensions. See `networks.py` and `networks_3d.py`. 
