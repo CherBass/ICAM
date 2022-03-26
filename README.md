@@ -38,21 +38,52 @@ https://www.ukbiobank.ac.uk/
 https://www.humanconnectome.org/
 
 
-## Instructions
+## Instructions - how to run 2D simulated dataset
 To run the 2D simulated dataset example, install python 3.7 with relevant libraries (listed above- recommended using a virtual environment), and run:
 `python train.py`
 It will run ICAM with default parameters on the simulated squares dataset, and save results to /results.
 
 - You can change parameters in `options.py`.
 
-- To run with regression, change regression to True in `options.py`. Note that an appropriate dataset would need to be used (not possible with 2D simulated dataset example).
+## Instructions - how to add new/ 3D dataset
 
+Using biobank dataset with ICAM code:
+- It is possible to train using biobank dataset using the current dataset classes implemented, however the data needs to be in the correct format:
+You should have an image_path folder with all the images to be loaded in NIfTI format (.nii.gz), and label_path to labels in pickle format. In the labels file you should have the following columns to be compatible with this dataloader: age, id, sex. For other label files changes would be required in the code (see biobank_dataloader.py).
+
+To add new dataset/ dataloaders:
 - Note that to change datasets, a new dataloader would be needed with the following outputs: [tensor image, tensor label (regression), tensor mask].
 Add this dataloader to `train.py` as another option. 
+
+- For an example of how to add an additional dataset, see biobank_dataloader.py.
+
+- Example of creating dataloaders in done using init_biobank_age_dataloader() function in dataloader_utils.py
+
+- Once a new datataloader is added, it should be added as an option in train.py. E.g.:
+
+```
+print('\n--- load dataset ---')
+# can add option for new dataloaders here
+if opts.data_type == 'syn2d':
+    healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, \
+    anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = _load_dataloader(opts)
+elif opts.data_type == 'biobank_age':
+    healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, \
+    anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = init_biobank_age_dataloader(opts)
+```
+
 
 - It is recommended to resize your datasets to [128, 128] for 2D datasets or [128, 160, 128] for 3D datasets. 
 Alternatively, some changes might be needed in the networks to run on datasets of different dimensions. See `networks.py` and `networks_3d.py`. 
 `nz` parameter might also need to be changed in `options.py`.
+
+- Other parameters which need to be changed to run a 3D dataset (see `options.py`):
+  - data_dim - run with data_dim = '3d'
+  - regression - to run with regression, change regression to True. Note that an appropriate dataset would need to be used (not possible with 2D simulated dataset example).
+  - label_path - new label path
+  - dataroot - new image folder path
+  - data_type - change to new datatype e.g. biobank_age
+
 
 ## Reference
 
