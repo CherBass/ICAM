@@ -124,7 +124,7 @@ Networks are compared using accuracy score and normalised cross correlation (NCC
 
 Table 1: ICAM ablation experiments in the HCP dataset.
 
-Table 1 (top) demonstrates performance of the network under ablation. Here, ICAM_DRIT represents a baseline re-implementation of the DRIT++ network (Lee et al., 2019) modified to support much more compact architecture (see Bass et al., 2020 for more details); ICAM_BCE reflects extension of DRIT++ integrating the classifier on the latent space and adding the rejection sampling module during training, ICAM_FA additionally integrates FA map regularisation, and ICAM represents the full network, which incorporates the L2 reconstruction loss. Each component of the network improves performance (either NCC+ or NCC-).
+Table 1 (top) demonstrates performance of the network under ablation. Here, ICAM_DRIT represents a baseline re-implementation of the DRIT++ network (Lee et al., 2019) modified to support much more compact architecture (see Bass et al., 2020 for more details); ICAM_BCE reflects extension of DRIT++ integrating the classifier on the latent space and adding the rejection sampling module during training, ICAM_FA additionally integrates FA map regularisation, and ICAM represents the full network, which incorporates the L2 reconstruction loss. Each component of the network improves performance (either NCC+ or NCC-). We note that the BCE loss (including rejection sampling) improves of NCC (+) quite a lot which is harder as learning to add lesions is more difficult than removing them.
 
 ![lambda M experiments](lambda_sweep_experiments.png)
 Table 2: FA map regularisation experiment (sweep of lambda M parameter) in the HCP dataset.
