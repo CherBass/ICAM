@@ -108,7 +108,7 @@ If this repository was useful to your work, please consider citing us:
 }`
 
 
-## Ablation and Parameter Optimisation
+## Supplemental materials: Ablation and Parameter Optimisation
 In this section, the design of the network and choice of parameters were validated using a biologically plausible 2D lesion simulation, derived using the HCP multimodal parcellation (HCP-MMP v 1.0) (Glasser et al., 2016). This dataset was specifically chosen, since it captures extensive topographic variation across individuals, thereby supporting the extension of the 2-class simulation presented in Baumgartner et al (2018) to one that captures a realistic model of cortical heterogeneity.
 
 
@@ -130,8 +130,12 @@ Table 2: FA map regularisation experiment (sweep of lambda M parameter).
 
 Since high values of lambda_M (FA map regularisation) may degrade performance by enforcing too much sparsity on the generated difference maps, we additionally investigated performance for different values (Table 2). Results show that performance is largely stable for lambda_M in the range 10-20 but performance degrades when this value is less than 5 or greater than 20.
 
+![class imbalance](data_imbalance_experiment.png)
+Figure 2: Effect of class imbalance on NCC and Accuracy.
 
-**References:
+Finally, we investigated the impact of class imbalance on ICAM by changing class imbalance from 1 (no imbalance - using all data from group 1) to 0.2 (high imbalance - using 20% of data from group 1). We show in Figure 2 that class imbalance has a minimal impact on NCC- (changing from 0.52 to 0.48), NCC+ (changing from 0.30 to 0.22) and Accuracy (0.97 to 0.90), when comparing no class imbalance to a high class imbalance (0.2).
+
+### References:
 
 Bass, C., da Silva, M., Sudre, C., Tudosiu, P.D., Smith, S. and Robinson, E., 2020. Icam: Interpretable classification via disentangled representations and feature attribution mapping. Advances in Neural Information Processing Systems, 33, pp.7697-7709.
 
