@@ -121,19 +121,19 @@ In these experiments, the baseline class (class 0 - no lesions) was sampled from
 Networks are compared using accuracy score and normalised cross correlation (NCC) between the absolute values of the attribution maps and the ground truth masks. The positive NCC (+) compares the lesion mask to the attribution map when translating between class 0 to 1 (adding lesions), and vice versa (removing lesions) for the negative NCC (-). Values reported are the mean and standard deviation across the test subjects.
 
 ![ablation experiments](ablation_experiments_table_neurips.png)
-Table 1: ICAM ablation experiments.
+Table 1: ICAM ablation experiments in the HCP dataset.
 
 Table 1 (top) demonstrates performance of the network under ablation. Here, ICAM_DRIT represents a baseline re-implementation of the DRIT++ network (Lee et al., 2019) modified to support much more compact architecture (see Bass et al., 2020 for more details); ICAM_BCE reflects extension of DRIT++ integrating the classifier on the latent space and adding the rejection sampling module during training, ICAM_FA additionally integrates FA map regularisation, and ICAM represents the full network, which incorporates the L2 reconstruction loss. Each component of the network improves performance (either NCC+ or NCC-).
 
 ![lambda M experiments](lambda_sweep_experiments.png)
-Table 2: FA map regularisation experiment (sweep of lambda M parameter).
+Table 2: FA map regularisation experiment (sweep of lambda M parameter) in the HCP dataset.
 
 Since high values of lambda_M (FA map regularisation) may degrade performance by enforcing too much sparsity on the generated difference maps, we additionally investigated performance for different values (Table 2). Results show that performance is largely stable for lambda_M in the range 10-20 but performance degrades when this value is less than 5 or greater than 20.
 
 ![class imbalance](data_imbalance_experiment.png)
-Figure 2: Effect of class imbalance on NCC and Accuracy.
+Figure 2: Effect of class imbalance on NCC and Accuracy in the HCP dataset.
 
-Finally, we investigated the impact of class imbalance on ICAM by changing class imbalance from 1 (no imbalance - using all data from group 1) to 0.2 (high imbalance - using 20% of data from group 1). We show in Figure 2 that class imbalance has a minimal impact on NCC- (changing from 0.52 to 0.48), NCC+ (changing from 0.30 to 0.22) and Accuracy (0.97 to 0.90), when comparing no class imbalance to a high class imbalance (0.2).
+Finally, we investigated the impact of class imbalance on ICAM by changing class imbalance from 1 (no imbalance - using all data from group 1) to 0.2 (high imbalance - using 20% of data from group 1). We show in Figure 2 that class imbalance has a minimal impact on NCC- (changing from 0.52 to 0.48), NCC+ (0.30 to 0.22) and Accuracy (0.97 to 0.90), when comparing no class imbalance to a high class imbalance (0.2).
 
 ### References:
 
