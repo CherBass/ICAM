@@ -560,8 +560,8 @@ class ICAM(nn.Module):
         images_b4 = (self.fake_BB_encoded).detach()
         images_b5 = (self.fake_B_recon).detach()
         if not self.mask is None:
-            mask_a = (self.mask_a.unsqueeze(0)).detach()
-            mask_b = (self.mask_b.unsqueeze(0)).detach()
+            mask_a = (self.mask_a.unsqueeze(1)).detach()
+            mask_b = (self.mask_b.unsqueeze(1)).detach()
             row1 = torch.cat(
             (images_a[0:1, ::], mask_a[0:1, ::], images_a1[0:1, ::], images_a2[0:1, ::], images_a3[0:1, ::], images_a4[0:1, ::], images_a5[0:1, ::]), 3)
             row2 = torch.cat(
