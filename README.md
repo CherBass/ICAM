@@ -128,7 +128,6 @@ In these experiments, the baseline class (class 0 - no lesions) was sampled from
 Networks are compared using accuracy score and normalised cross correlation (NCC) between the absolute values of the attribution maps and the ground truth masks. The positive NCC (+) compares the lesion mask to the attribution map when translating between class 0 to 1 (adding lesions), and vice versa (removing lesions) for the negative NCC (-). Values reported are the mean and standard deviation across the test subjects.
 
 ![ablation experiments](ablation_experiments_table_neurips.png)
-
 Table 1: ICAM ablation experiments in the HCP dataset.
 
 Table 1 (top) demonstrates performance of the network under ablation. Here, ICAM_DRIT represents a baseline re-implementation of the DRIT++ network (Lee et al., 2019) modified to support much more compact architecture (see Bass et al., 2020 for more details); ICAM_BCE reflects extension of DRIT++ integrating the classifier on the latent space and adding the rejection sampling module during training, ICAM_FA additionally integrates FA map regularisation, and ICAM represents the full network, which incorporates the L2 reconstruction loss. Each component of the network improves performance (either NCC+ or NCC-). We note that the BCE loss (including rejection sampling) improves of NCC (+) quite a lot which is harder as learning to add lesions is more difficult than removing them.
