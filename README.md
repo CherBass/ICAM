@@ -48,7 +48,7 @@ It will run ICAM with default parameters on the simulated squares dataset, and s
 - You can change parameters in `options.py`.
 
 ## Instructions - how to train using cross-validation
-To run the model with cross-validation, set --cross_validation to 'True' and add your own or choose one of the datasets available (either 'dhcp_2d_crossval', 'biobank_age_crossval' or 'syn2d_crossval') in options.py . The data is divided in 90% for train/validation and 10% for a hold-out test set. The number of folds used in training is by default 5 - this can be changed in the parameter KFOLDS in train.py . 
+To run the model with cross-validation, set --cross_validation to 'True' and add your own or choose one of the datasets available (either 'dhcp_2d_crossval', 'biobank_age_crossval' or 'syn2d_crossval') in `options.py`. The data is divided in 90% for train/validation and 10% for a hold-out test set. The number of folds used in training is by default 5 - this can be changed in the parameter KFOLDS in `train.py`. 
 
 ## Instructions - how to add new/ 3D dataset
 
