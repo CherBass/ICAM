@@ -149,6 +149,7 @@ A cross-validation experiment was performed on dHCP brain age regression, where 
 The results for the test using each fold are presented in table 3, as well as the final averaged mean and standard deviation using cross-validation.
 
 ![cross-validation results](dhcp_crossval_results.png)
+
 Table 3: MAE and MSE test results, after 250 epochs, for brain age prediction in each fold and the mean and standard deviation results.
 
 These results are broadly consistent across folds suggesting the model is robust and not overfitting. 
