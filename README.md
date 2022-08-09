@@ -135,6 +135,7 @@ Table 1 (top) demonstrates performance of the network under ablation. Here, ICAM
 
 ![lambda M experiments](lambda_sweep_experiments.png)
 
+
 Table 2: FA map regularisation experiment (sweep of lambda M parameter) in the HCP dataset.
 
 Since high values of lambda_M (FA map regularisation) may degrade performance by enforcing too much sparsity on the generated difference maps, we additionally investigated performance for different values (Table 2). Results show that performance is largely stable for lambda_M in the range 10-20 but performance degrades when this value is less than 5 or greater than 20.
