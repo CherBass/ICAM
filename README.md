@@ -113,7 +113,9 @@ If this repository was useful to your work, please consider citing us:
 }`
 
 
-## Supplemental materials: Ablation and Parameter Optimisation
+## Supplemental materials: 
+
+### **Ablation and Parameter Optimisation**
 In this section, the design of the network and choice of parameters were validated using a biologically plausible 2D lesion simulation, derived using the HCP multimodal parcellation (HCP-MMP v 1.0) (Glasser et al., 2016). This dataset was specifically chosen, since it captures extensive topographic variation across individuals, thereby supporting the extension of the 2-class simulation presented in Baumgartner et al (2018) to one that captures a realistic model of cortical heterogeneity.
 
 
@@ -140,6 +142,16 @@ Since high values of lambda_M (FA map regularisation) may degrade performance by
 Figure 2: Effect of class imbalance on NCC and Accuracy in the HCP dataset.
 
 Finally, we investigated the impact of class imbalance on ICAM by changing class imbalance from 1 (no imbalance - using all data from group 1) to 0.2 (high imbalance - using 20% of data from group 1). We show in Figure 2 that class imbalance has a minimal impact on NCC- (changing from 0.52 to 0.48), NCC+ (0.30 to 0.22) and Accuracy (0.97 to 0.90), when comparing no class imbalance to a high class imbalance (0.2).
+
+### **Cross-Validation Experiment** 
+A cross-validation experiment was performed on dHCP brain age regression, where the model was trained on  2D slices from the middle of the brain  (corresponding to 7000 training images in total). 10% of the data was consistently held out for testing, the remaining 90% was split into five folds, using 4 folds for training and one for model validation in each cross-validated run. 
+
+The results for the test using each fold are presented in table 3, as well as the final averaged mean and standard deviation using cross-validation.
+
+![cross-validation results](dhcp_crossval_results.png)
+Table 3: MAE and MSE test results, after 250 epochs, for brain age prediction in each fold and the mean and standard deviation results.
+
+These results are broadly consistent across folds suggesting the model is robust and not overfitting. 
 
 ### References:
 
