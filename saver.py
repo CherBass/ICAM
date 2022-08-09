@@ -7,8 +7,7 @@
 import os
 import torchvision
 from tensorboardX import SummaryWriter
-
-
+        
 class Saver():
     def __init__(self, opts):
         """

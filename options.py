@@ -14,16 +14,18 @@ class TrainOptions():
         # data loader related
         self.parser.add_argument('--dataroot', type=str, default='./datasets',
                                  help='path to data')
-        self.parser.add_argument('--data_type', type=str, default='syn2d', choices=['syn2d', 'biobank_age'],
+        self.parser.add_argument('--data_type', type=str, default= 'syn2d' , choices=['syn2d', 'biobank_age', 'dhcp_2d' , 'syn2d_crossval', 'biobank_age_crossval', 'dhcp_2d_crossval'] ,
                                  help='data to load' 
                                       'options: syn2d [128, 128]'
                                       'biobank_age [128, 160, 128]'
+                                      'dhcp [128, 128]' 
                                       'add more dataloaders here')
+        self.parser.add_argument('--cross_validation', type=bool, default=False, help='wheter to use cross validation kfolds to split data - default is 5 folds')
         self.parser.add_argument('--data_dim', type=str, default='2d', choices=['2d', '3d'],
                                  help='whether to load 2d or 3d networks. Options: 2d, 3d')
 
         # biobank related
-        self.parser.add_argument('--label_path', type=str, default='/data/biobank/biobank_labels_filtered.pkl',
+        self.parser.add_argument('--label_path', type=str, default= '/data/biobank/biobank_labels_filtered.pkl',
                                  help='path of data')
         self.parser.add_argument('--aug_rician_noise', type=int, default=0,
                                  help='whether to use rician noise augmentation'
@@ -85,7 +87,7 @@ class TrainOptions():
         self.parser.add_argument('--lambda_latent_l1', type=float, default=1)
         self.parser.add_argument('--lambda_kl_zc', type=float, default=0.01)
         self.parser.add_argument('--lambda_kl_za', type=float, default=0.01)
-        self.parser.add_argument('--cross_corr', type=bool, default=True, help='whether to check cross correlation '
+        self.parser.add_argument('--cross_corr', type=bool, default=False, help='whether to check cross correlation '
                                                                                 'suitable for datasets with masks')
         self.parser.add_argument('--loss_latent_l1_random', type=bool, default=True, help='latent regression loss')
         self.parser.add_argument('--loss_diff_M', type=bool, default=True, help='feature attribution map loss')
@@ -93,7 +95,7 @@ class TrainOptions():
                                                                                        'random z latent, '
                                                                                        'and feed to generator z '
                                                                                        'from correct class')
-        self.parser.add_argument('--regression', type=bool, default=False, help='whether to add another regression loss'
+        self.parser.add_argument('--regression', type=bool, default=True, help='whether to add another regression loss'
                                                                                 ' in the attribute encoder')
         self.parser.add_argument('--gpu', type=bool, default=True, help='whether to use gpu')
         self.parser.add_argument('--device', type=int, default=0, help='which device num to use: 0,1,2')

@@ -9,9 +9,11 @@ from synthetic_dataloader import *
 import torchvision.transforms as transforms
 from skimage.transform import resize
 from biobank_dataloader import *
+from dhcp_dataloader import *
 import torchvision
 import SimpleITK as sitk
 import random
+import numpy as np
 from PIL import Image
 
 
@@ -328,6 +330,28 @@ def init_synth_dataloader(opt, anomaly, mode='train', batch_size=2):
     return dataloader
 
 
+def init_synth_dataloader_crossval(opt, anomaly, mode='train', batch_size=2):
+    """
+    Initialize SynthDataset
+    :param opt: options
+    :param anomaly: whether squares or no squares
+    :param mode: train, val or test
+    :param batch_size: batch size
+    :return: dataloader
+    """
+    dataset = SynthDataset(opt=opt, anomaly=anomaly,
+                           mode=mode,
+                           transform=transforms.Compose([
+                               torch.tensor,]))
+    if mode == 'test':
+        return dataset
+    
+    elif mode == 'train':    
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
+                                             shuffle=True, drop_last=True)
+        return dataloader
+
+
 def init_biobank_age_dataloader(opt, shuffle_test=False):
     """
         Initialize both datasets and dataloaders
@@ -396,3 +420,181 @@ def init_biobank_age_dataloader(opt, shuffle_test=False):
 
     return healthy_dataloader_train, healthy_dataloader_val, healthy_dataloader_test, \
            anomaly_dataloader_train, anomaly_dataloader_val, anomaly_dataloader_test
+
+
+def init_biobank_age_dataloader_crossval(opt, shuffle_test=False):
+    """
+        Initialize both datasets and dataloaders
+    image_size = [128, 160, 128]
+
+    :param opt: options
+    :param shuffle_test: whether to shuffle test data
+    :return: dataloader
+    """
+    if (not opt.aug_rician_noise == None) or (not opt.aug_bspline_deformation == None) \
+            or (not opt.resize_image == None):
+        transforms = []
+    else:
+        transforms = None
+
+    if opt.resize_image:
+        transforms.append(ResizeImage(image_size=opt.resize_size))
+
+    if opt.aug_rician_noise:
+        transforms.append(RicianNoise(noise_level=opt.aug_rician_noise))
+
+    if opt.aug_bspline_deformation:
+        transforms.append(ElasticDeformationsBspline(num_controlpoints=opt.aug_bspline_deformation[0],
+                                                     sigma=opt.aug_bspline_deformation[1]))
+
+    if opt.aug_rician_noise or opt.aug_bspline_deformation or opt.resize_image:
+        transforms = torchvision.transforms.Compose(transforms)
+
+    healthy_train = BiobankRegAgeDataset(image_path=opt.dataroot+'_data',
+                                         label_path=opt.label_path,
+                                         class_bins=opt.age_range_0,
+                                         class_label=0,
+                                         get_id=opt.get_id,
+                                         transform=transforms)
+
+    anomaly_train = BiobankRegAgeDataset(image_path=opt.dataroot+'_data',
+                                         label_path=opt.label_path,
+                                         class_bins=opt.age_range_1,
+                                         class_label=1,
+                                         get_id=opt.get_id,
+                                         transform=transforms)
+
+    healthy_dataset_train, healthy_dataset_test = train_valid_split(healthy_train, split_fold=0.1,
+                                                                         random_seed=opt.random_seed)  #90/10 for train/test
+    anomaly_dataset_train, anomaly_dataset_test = train_valid_split(anomaly_train, split_fold=0.1,
+                                                                         random_seed=opt.random_seed) #90/10 for train/test
+    
+    print('Full Train healthy data length in fold: ', len(healthy_dataset_train), 'Test data hold-out length: ',len(healthy_dataset_test))
+    print('Full Train anomaly data length in fold: ', len(anomaly_dataset_train), 'Test data hold-out length: ',len(anomaly_dataset_test))
+
+
+    healthy_dataloader_test = torch.utils.data.DataLoader(healthy_dataset_test, batch_size=opt.batch_size//2,
+                                                         shuffle=shuffle_test)
+    anomaly_dataloader_test = torch.utils.data.DataLoader(anomaly_dataset_test, batch_size=opt.batch_size//2,
+                                                         shuffle=shuffle_test)
+
+    return healthy_dataset_train, healthy_dataloader_test, anomaly_dataset_train, anomaly_dataloader_test
+
+
+def init_dhcp_dataloader_2d_crossval(opt, shuffle_test=False):
+    '''
+    Initialize both datasets and dataloaders
+    image_size = [128, 160]
+    '''
+    if (not opt.aug_rician_noise == None) or (not opt.aug_bspline_deformation == None) or (not opt.resize_image == None):
+        transforms = []
+    else:
+        transforms = None
+
+    if opt.resize_image:
+        transforms.append(ResizeImage(image_size=opt.resize_size))
+        
+
+    if opt.aug_rician_noise:
+        transforms.append(RicianNoise(noise_level=opt.aug_rician_noise))
+
+    if opt.aug_bspline_deformation:
+        transforms.append(ElasticDeformationsBspline(num_controlpoints=opt.aug_bspline_deformation[0], sigma=opt.aug_bspline_deformation[1]))
+
+    if opt.aug_rician_noise or opt.aug_bspline_deformation or opt.resize_image:
+        transforms = torchvision.transforms.Compose(transforms)
+
+    healthy_train = DHCP_2D(image_path=opt.dataroot,
+                         label_path=opt.label_path,
+                         num_classes=2,
+                         task='regression',
+                         class_label=0,
+                         transform=transforms)
+
+    anomaly_train = DHCP_2D(image_path=opt.dataroot,
+                         label_path=opt.label_path,
+                         num_classes=2,
+                         task='regression',
+                         class_label=1,
+                         transform=transforms)
+
+    healthy_dataset_train, healthy_dataset_test = train_valid_split(healthy_train, split_fold=0.1,
+                                                                         random_seed=opt.random_seed)  
+    anomaly_dataset_train, anomaly_dataset_test = train_valid_split(anomaly_train, split_fold=0.1,
+                                                                         random_seed=opt.random_seed) 
+
+
+    print('Full Train healthy data length in fold: ', len(healthy_dataset_train), 'Test data hold-out length: ',len(healthy_dataset_test))
+    print('Full Train anomaly data length in fold: ', len(anomaly_dataset_train), 'Test data hold-out length: ',len(anomaly_dataset_test))
+    
+    healthy_dataloader_test = torch.utils.data.DataLoader(healthy_dataset_test, batch_size=opt.batch_size//2,
+                                                         shuffle=shuffle_test)
+    anomaly_dataloader_test = torch.utils.data.DataLoader(anomaly_dataset_test, batch_size=opt.batch_size//2,
+                                                         shuffle=shuffle_test)
+
+    return healthy_dataset_train, healthy_dataloader_test, anomaly_dataset_train, anomaly_dataloader_test
+
+
+# no cross validation
+def init_dhcp_dataloader_2d(opt, shuffle_test=False): # was just init_dhcp_dataloader_2d
+    '''
+    Initialize both datasets and dataloaders
+    image_size = [128, 160]
+    '''
+    if (not opt.aug_rician_noise == None) or (not opt.aug_bspline_deformation == None) or (not opt.resize_image == None):
+        transforms = []
+    else:
+        transforms = None
+
+    if opt.resize_image:
+        transforms.append(ResizeImage(image_size=opt.resize_size))
+
+    if opt.aug_rician_noise:
+        transforms.append(RicianNoise(noise_level=opt.aug_rician_noise))
+
+    if opt.aug_bspline_deformation:
+        transforms.append(ElasticDeformationsBspline(num_controlpoints=opt.aug_bspline_deformation[0], sigma=opt.aug_bspline_deformation[1]))
+
+    if opt.aug_rician_noise or opt.aug_bspline_deformation or opt.resize_image:
+        transforms = torchvision.transforms.Compose(transforms)
+
+    healthy_train = DHCP_2D(image_path=opt.dataroot,
+                         label_path=opt.label_path,
+                         num_classes=2,
+                         task='regression',
+                         class_label=0,
+                         transform=transforms)
+
+    anomaly_train = DHCP_2D(image_path=opt.dataroot,
+                         label_path=opt.label_path,
+                         num_classes=2,
+                         task='regression',
+                         class_label=1,
+                         transform=transforms)
+
+    healthy_dataloader_train, healthy_dataloader_val, healthy_dataloader_test = train_val_test_split(healthy_train, val_split=0.1, test_split=0.1,
+                                                                         random_seed=opt.random_seed)
+    anomaly_dataloader_train, anomaly_dataloader_val, anomaly_dataloader_test = train_val_test_split(anomaly_train, val_split=0.1, test_split=0.1,
+                                                                         random_seed=opt.random_seed)
+
+
+    print('Train healthy data length: ', len(healthy_dataloader_train), 'Val data length: ',len(healthy_dataloader_val), 'Test data length: ', len(healthy_dataloader_test))
+    print('Train anomaly data length: ', len(anomaly_dataloader_train), 'Val data length: ',len(anomaly_dataloader_val), 'Test data length: ', len(anomaly_dataloader_test))
+
+    healthy_dataloader_train = torch.utils.data.DataLoader(healthy_dataloader_train, batch_size=opt.batch_size//2,
+                                                           shuffle=True)
+    anomaly_dataloader_train = torch.utils.data.DataLoader(anomaly_dataloader_train, batch_size=opt.batch_size//2,
+                                                           shuffle=True)
+
+    healthy_dataloader_val = torch.utils.data.DataLoader(healthy_dataloader_val, batch_size=opt.batch_size//2,
+                                                         shuffle=True)
+    anomaly_dataloader_val = torch.utils.data.DataLoader(anomaly_dataloader_val, batch_size=opt.batch_size//2,
+                                                         shuffle=True)
+    healthy_dataloader_test = torch.utils.data.DataLoader(healthy_dataloader_test, batch_size=opt.batch_size//2,
+                                                         shuffle=shuffle_test)
+    anomaly_dataloader_test = torch.utils.data.DataLoader(anomaly_dataloader_test, batch_size=opt.batch_size//2,
+                                                         shuffle=shuffle_test)
+
+    return healthy_dataloader_train, healthy_dataloader_val, healthy_dataloader_test, anomaly_dataloader_train, anomaly_dataloader_val, anomaly_dataloader_test
+
+
