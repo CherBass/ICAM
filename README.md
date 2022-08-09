@@ -146,10 +146,12 @@ Finally, we investigated the impact of class imbalance on ICAM by changing class
 ### **Cross-Validation Experiment** 
 A cross-validation experiment was performed on dHCP brain age regression, where the model was trained on  2D slices from the middle of the brain  (corresponding to 7000 training images in total). 10% of the data was consistently held out for testing, the remaining 90% was split into five folds, using 4 folds for training and one for model validation in each cross-validated run. 
 
-The results for the test using each fold are presented in table 3, as well as the final averaged mean and standard deviation using cross-validation. These results are broadly consistent across folds suggesting the model is robust and not overfitting. 
+The results for the test using each fold are presented in table 3, as well as the final averaged mean and standard deviation using cross-validation.
 
 ![cross-validation results](dhcp_crossval_results.png)
 Table 3: MAE and MSE test results, after 250 epochs, for brain age prediction in each fold and the mean and standard deviation results.
+
+These results are broadly consistent across folds suggesting the model is robust and not overfitting. 
 
 ### References:
 
