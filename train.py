@@ -47,7 +47,10 @@ def main():
     opts.age_range_0 = AGE_RANGE_0
     opts.age_range_1 = AGE_RANGE_1
     opts.resize_image = RESIZE_IMAGE
-    opts.resize_size = RESIZE_SIZE_2D
+    if opts.data_dim == '2d':
+        opts.resize_size = RESIZE_SIZE_2D
+    elif opts.data_dim == '3d':
+        opts.resize_size = RESIZE_SIZE_3D
     opts.cross_val_folds = KFOLDS
     ep0 = 0
     total_it = 0
@@ -190,7 +193,7 @@ def main():
         try:
             _test(opts, model, healthy_test_dataloader, anomaly_test_dataloader)
         except Exception as e:
-            print(f'Encountered error during validation - {e}')
+            print(f'Encountered error during test - {e}')
             raise e
         
         # save last model
@@ -317,14 +320,13 @@ def main():
                               'Elapsed time: {:0>2}:{:0>2}:{:05.2f}'
                               .format(total_it, ep, iter_counter, train_accuracy, train_f1, int(hours), int(minutes), seconds))
                     
-                    # Validation - during training fold
-                    if (total_it % opts.train_print_it) == 0:
-                        print('Performing validation inside fold.....')
-                        try:
-                            mae_val, mse_val, acc_val, f1_val =  _validation_crossval(opts, model, healthy_val_dataloader, anomaly_val_dataloader, fold)
-                        except Exception as e:
-                            print(f'Encountered error during validation - {e}')
-                            raise e
+                # Validation - each epoch during training fold
+                print('Performing validation inside fold.....')
+                try:
+                    mae_val, mse_val, acc_val, f1_val =  _validation_crossval(opts, model, healthy_val_dataloader, anomaly_val_dataloader, fold)
+                except Exception as e:
+                    print(f'Encountered error during validation - {e}')
+                    raise e
         
                 # Save model end of fold
                 if ep % opts.model_save_freq == 0:
@@ -422,9 +424,9 @@ def _load_dataloader(opts):
             opts, anomaly=True, mode='test', batch_size=opts.val_batch_size // 2)
     elif opts.data_type == 'syn2d_crossval':
         healthy_dataloader = init_synth_dataloader_crossval(
-            opts, anomaly=False, mode='train', batch_size=opts.batch_size // 2)
+            opts, anomaly=False, mode='train', batch_size=opts.val_batch_size // 2)
         anomaly_dataloader = init_synth_dataloader_crossval(
-            opts, anomaly=True, mode='train', batch_size=opts.batch_size // 2)
+            opts, anomaly=True, mode='train', batch_size=opts.val_batch_size // 2)
         healthy_test_dataloader = init_synth_dataloader_crossval(
             opts, anomaly=False, mode='test', batch_size=opts.val_batch_size // 2)
         anomaly_test_dataloader = init_synth_dataloader_crossval(
@@ -434,8 +436,14 @@ def _load_dataloader(opts):
         anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader = init_biobank_age_dataloader(
             opts)
 
-    return healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, \
+    if opts.cross_validation == False:
+    	return healthy_dataloader, healthy_val_dataloader, healthy_test_dataloader, \
            anomaly_dataloader, anomaly_val_dataloader, anomaly_test_dataloader
+           
+    else:
+    	return healthy_dataloader, healthy_test_dataloader, \
+           anomaly_dataloader, anomaly_test_dataloader
+     
 
 
 def _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader):
@@ -464,7 +472,7 @@ def _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader):
     healthy_val_dataloader_len = len(healthy_val_dataloader)
 
     if anomaly_val_dataloader_len > healthy_val_dataloader_len:
-        raise Exception(f'anaomaly dataloader len {anomaly_val_dataloader_len} is bigger than healthy dataloader'
+        raise Exception(f'anomaly dataloader len {anomaly_val_dataloader_len} is bigger than healthy dataloader'
                         f' len {healthy_val_dataloader_len}')
 
     for j in range(healthy_val_dataloader_len):
@@ -564,7 +572,8 @@ def _validation(opts, model, healthy_val_dataloader, anomaly_val_dataloader):
     # save and plot results
     _save_best_models(opts, model)
     _plot_results(opts, e)
-    _translation_example(opts, model, healthy_val_images, anomaly_val_images, 'val_images')
+    if opts.data_dim == '2d':
+        _translation_example(opts, model, healthy_val_images, anomaly_val_images, 'val_images')
 
 
 def _validation_crossval(opts, model, healthy_val_dataloader, anomaly_val_dataloader, fold):
@@ -593,7 +602,7 @@ def _validation_crossval(opts, model, healthy_val_dataloader, anomaly_val_datalo
     healthy_val_dataloader_len = len(healthy_val_dataloader)
 
     if anomaly_val_dataloader_len > healthy_val_dataloader_len:
-        raise Exception(f'anaomaly dataloader len {anomaly_val_dataloader_len} is bigger than healthy dataloader'
+        raise Exception(f'anomaly dataloader len {anomaly_val_dataloader_len} is bigger than healthy dataloader'
                         f' len {healthy_val_dataloader_len}')
 
     for j in range(healthy_val_dataloader_len):
@@ -693,7 +702,8 @@ def _validation_crossval(opts, model, healthy_val_dataloader, anomaly_val_datalo
     # save and plot results
     _save_best_models(opts, model)
     _plot_results_crossval(opts, e, fold)
-    _translation_example(opts, model, healthy_val_images, anomaly_val_images, 'val_images_fold_' + str(fold))
+    if opts.data_dim == '2d':
+        _translation_example(opts, model, healthy_val_images, anomaly_val_images, 'val_images_fold_' + str(fold))
     
     return val_mae[ep], val_mse[ep], val_accuracy[ep], val_f1[ep]
 
@@ -806,7 +816,8 @@ def _test(opts, model, healthy_test_dataloader, anomaly_test_dataloader):
         json.dump(save_opts, file, indent=4, sort_keys=True)
 
     # plot translation figures
-    _translation_example(opts, model, healthy_val_images, anomaly_val_images, 'test_images')
+    if opts.data_dim == '2d':
+        _translation_example(opts, model, healthy_val_images, anomaly_val_images, 'test_images')
 
 
 def _test_crossval(opts, model, healthy_test_dataloader, anomaly_test_dataloader, fold):
@@ -834,7 +845,7 @@ def _test_crossval(opts, model, healthy_test_dataloader, anomaly_test_dataloader
     healthy_val_dataloader_len = len(healthy_test_dataloader)
 
     if anomaly_val_dataloader_len > healthy_val_dataloader_len:
-        raise Exception(f'anaomaly dataloader len {anomaly_val_dataloader_len} is bigger than healthy dataloader'
+        raise Exception(f'anomaly dataloader len {anomaly_val_dataloader_len} is bigger than healthy dataloader'
                         f' len {healthy_val_dataloader_len}')
 
     # anomaly dataset should be the same or smaller size than healthy
@@ -917,10 +928,15 @@ def _test_crossval(opts, model, healthy_test_dataloader, anomaly_test_dataloader
         json.dump(save_opts, file, indent=4, sort_keys=True)
 
     # plot translation figures
-    _translation_example(opts, model, healthy_val_images, anomaly_val_images, 'test_images_fold' + str(fold))
+    if opts.data_dim == '2d':
+        _translation_example(opts, model, healthy_val_images, anomaly_val_images, 'test_images_fold' + str(fold))
     
-    return val_mae, val_mse, val_accuracy, val_f1
-
+    if opts.regression:    
+        return val_mae, val_mse, val_accuracy, val_f1
+    
+    elif opts.cross_corr:
+        return val_accuracy, val_f1, val_cross_corr_a, val_cross_corr_b
+    
 
 def _translation_example(opts, model, healthy_images, anomaly_images, save_name='val_images'):
     """

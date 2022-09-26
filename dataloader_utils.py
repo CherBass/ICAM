@@ -285,6 +285,52 @@ def train_val_test_split(ds, val_split=0.1, test_split=0.1, random_seed=None):
 
     return train, val, test
 
+
+def train_val_test_split_dhcp(ds, val_split=0.1, test_split=0.1, random_seed=None):
+    '''
+    This is a pytorch generic function that takes a data.Dataset object and splits it to train, validation, and test - used only for the 2D dHCP dataset so train/validation and test sets don't share the same subjects.
+    :param ds: data
+    :param split_fold: train val split
+    :param random_seed: seed
+    :return: train, val, test datasets
+    '''
+    if random_seed != None:
+        np.random.seed(random_seed)
+
+    dslen = len(ds)
+    subj_count = dslen / 10 # 10 slices for each patient
+    
+    indices_subs = list(range(0,dslen,10)) # 10 slices per subject
+    np.random.shuffle(indices_subs)
+    
+    list_shuff_subs = []
+    np.random.shuffle(indices_subs)
+    for ind in indices_subs:
+        i = 0
+        for value in range(10):
+            list_shuff_subs.append(ind+i)
+            i += 1 
+    
+    #size of sets
+    val_size = int(subj_count * val_split) # will be in subjects (*10 to get slices)
+    test_size = int(subj_count * test_split)
+    train_size = int(subj_count - val_size - test_size)
+    
+    train_size_slices = train_size * 10
+    val_size_slices = val_size * 10
+    test_size_slices = test_size * 10
+    
+    train_mapping = list_shuff_subs[:train_size_slices]
+    val_mapping = list_shuff_subs[train_size_slices : train_size_slices + val_size_slices]
+    test_mapping = list_shuff_subs[train_size_slices + val_size_slices : train_size_slices + val_size_slices + test_size_slices]
+    
+    train = GenHelper(ds, train_size_slices, train_mapping)
+    val = GenHelper(ds, val_size_slices, val_mapping)
+    test = GenHelper(ds, test_size_slices, test_mapping)
+
+    return train, val, test
+
+
 def train_valid_split(ds, split_fold=0.1, random_seed=None):
     """
     This is a pytorch generic function that takes a data.Dataset object and splits it to train, validation.
@@ -306,6 +352,54 @@ def train_valid_split(ds, split_fold=0.1, random_seed=None):
     valid = GenHelper(ds, valid_size, valid_mapping)
 
     return train, valid
+
+
+def train_valid_split_dhcp(ds, split_fold=0.1, random_seed=None):
+    """
+    This is a pytorch generic function that takes a data.Dataset object and splits it to train, validation - - used only for the 2D dHCP dataset so train/validation and test sets don't share the same subjects.
+    :param ds: data
+    :param split_fold: train val split
+    :param random_seed: seed
+    :return: train, val datasets
+    """
+    if random_seed is not None:
+        np.random.seed(random_seed)
+
+    dslen = len(ds)
+    subj_count = dslen / 10 # 10 slices for each patient
+    
+    indices_subs = list(range(0,dslen,10)) 
+    np.random.shuffle(indices_subs)
+    
+    list_shuff_subs = []
+    np.random.shuffle(indices_subs)
+    for ind in indices_subs:
+        i = 0
+        for value in range(10):
+            list_shuff_subs.append(ind+i)
+            i += 1 
+    
+    
+    list_shuff_subs = []
+    np.random.shuffle(indices_subs)
+    
+    for ind in indices_subs:
+        i = 0
+        for value in range(10):
+            list_shuff_subs.append(ind+i)
+            i += 1 
+    
+    valid_size = int(subj_count * split_fold) # will be in subjects (*10 to get slices)
+    val_size_slices = valid_size * 10
+    
+    train_mapping = list_shuff_subs[val_size_slices:]
+    valid_mapping = list_shuff_subs[:val_size_slices]
+    
+    train = GenHelper(ds, dslen - val_size_slices, train_mapping)
+    valid = GenHelper(ds, val_size_slices, valid_mapping)
+
+    return train, valid
+
 
 # ---------------------------------------------- dataloaders ------------------------------------------------------
 
@@ -336,25 +430,26 @@ def init_synth_dataloader_crossval(opt, anomaly, mode='train', batch_size=2):
     :param opt: options
     :param anomaly: whether squares or no squares
     :param mode: train, val or test
-    :param batch_size: batch size
-    :return: dataloader
+    :return: dataset
     """
     dataset = SynthDataset(opt=opt, anomaly=anomaly,
                            mode=mode,
                            transform=transforms.Compose([
                                torch.tensor,]))
+
     if mode == 'test':
-        return dataset
-    
-    elif mode == 'train':    
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
+    	dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                              shuffle=True, drop_last=True)
-        return dataloader
+    	return dataloader 
+    
+    
+    elif mode == 'train': 
+        return dataset 
 
 
 def init_biobank_age_dataloader(opt, shuffle_test=False):
     """
-        Initialize both datasets and dataloaders
+    Initialize both datasets and dataloaders
     image_size = [128, 160, 128]
 
     :param opt: options
@@ -424,7 +519,7 @@ def init_biobank_age_dataloader(opt, shuffle_test=False):
 
 def init_biobank_age_dataloader_crossval(opt, shuffle_test=False):
     """
-        Initialize both datasets and dataloaders
+    Initialize both datasets and dataloaders
     image_size = [128, 160, 128]
 
     :param opt: options
@@ -518,9 +613,9 @@ def init_dhcp_dataloader_2d_crossval(opt, shuffle_test=False):
                          class_label=1,
                          transform=transforms)
 
-    healthy_dataset_train, healthy_dataset_test = train_valid_split(healthy_train, split_fold=0.1,
+    healthy_dataset_train, healthy_dataset_test = train_valid_split_dhcp(healthy_train, split_fold=0.1,
                                                                          random_seed=opt.random_seed)  
-    anomaly_dataset_train, anomaly_dataset_test = train_valid_split(anomaly_train, split_fold=0.1,
+    anomaly_dataset_train, anomaly_dataset_test = train_valid_split_dhcp(anomaly_train, split_fold=0.1,
                                                                          random_seed=opt.random_seed) 
 
 
@@ -535,8 +630,7 @@ def init_dhcp_dataloader_2d_crossval(opt, shuffle_test=False):
     return healthy_dataset_train, healthy_dataloader_test, anomaly_dataset_train, anomaly_dataloader_test
 
 
-# no cross validation
-def init_dhcp_dataloader_2d(opt, shuffle_test=False): # was just init_dhcp_dataloader_2d
+def init_dhcp_dataloader_2d(opt, shuffle_test=False):
     '''
     Initialize both datasets and dataloaders
     image_size = [128, 160]
@@ -572,9 +666,9 @@ def init_dhcp_dataloader_2d(opt, shuffle_test=False): # was just init_dhcp_datal
                          class_label=1,
                          transform=transforms)
 
-    healthy_dataloader_train, healthy_dataloader_val, healthy_dataloader_test = train_val_test_split(healthy_train, val_split=0.1, test_split=0.1,
+    healthy_dataloader_train, healthy_dataloader_val, healthy_dataloader_test = train_val_test_split_dhcp(healthy_train, val_split=0.1, test_split=0.1,
                                                                          random_seed=opt.random_seed)
-    anomaly_dataloader_train, anomaly_dataloader_val, anomaly_dataloader_test = train_val_test_split(anomaly_train, val_split=0.1, test_split=0.1,
+    anomaly_dataloader_train, anomaly_dataloader_val, anomaly_dataloader_test = train_val_test_split_dhcp(anomaly_train, val_split=0.1, test_split=0.1,
                                                                          random_seed=opt.random_seed)
 
 

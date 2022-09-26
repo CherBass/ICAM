@@ -401,7 +401,7 @@ class ICAM(nn.Module):
 
     def backward_EG(self):
         """
-        Accumulate all losses on real images for econders (e_a, e_c) and generator, backward
+        Accumulate all losses on real images for encoders (e_a, e_c) and generator, backward
         :return:
         """
 
